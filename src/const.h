@@ -260,6 +260,7 @@ enum refl { // how to calculate interaction of dipoles through the nearby surfac
 enum iter { // iterative methods
 	IT_BCGS2,    // Enhanced Bi-Conjugate Gradient Stabilized (2)
 	IT_BICG_CS,  // Bi-Conjugate Gradient for Complex-Symmetric matrices
+	IT_BICG_BLOCK, // Bi-Conjugate Gradient with block iterative optimization
 	IT_BICGSTAB, // Bi-Conjugate Gradient Stabilized
 	IT_CGNR,     // Conjugate Gradient for Normalized equations minimizing Residual norm
 	IT_CSYM,     // Algorithm CSYM

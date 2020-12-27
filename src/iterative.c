@@ -105,6 +105,7 @@ static doublecomplex dumb ATT_UNUSED; // dumb variable, used in workaround for i
 
 ITER_FUNC(BCGS2);
 ITER_FUNC(BiCG_CS);
+ITER_FUNC(BiCGBlock);
 ITER_FUNC(BiCGStab);
 ITER_FUNC(CGNR);
 ITER_FUNC(CSYM);
@@ -118,6 +119,7 @@ ITER_FUNC(QMR_CS_2);
 static const struct iter_params_struct params[]={
 	{IT_BCGS2,15000,2,1,BCGS2},
 	{IT_BICG_CS,50000,1,0,BiCG_CS},
+	{IT_BICG_BLOCK,50000,1,0,BiCGBlock},
 	{IT_BICGSTAB,30000,3,3,BiCGStab},
 	{IT_CGNR,10,1,0,CGNR},
 	{IT_CSYM,10,6,2,CSYM},
@@ -734,6 +736,70 @@ ITER_FUNC(BiCGStab)
 				// initialize ro_old -> ro_k-2 for next iteration
 				ro_old=ro_new;
 			}
+			return; // end of PHASE_ITER
+	}
+	LogError(ONE_POS,"Unknown phase (%d) of the iterative solver",(int)ph);
+}
+#undef EPS1
+#undef EPS2
+
+//======================================================================================================================
+
+ITER_FUNC(BiCGBlock)
+/* Bi-Conjugate Gradient for Complex Symmetric systems, based on:
+ * O'Leary (1980).
+ */
+{
+#define EPS1 1E-10 // for (rT.r)/(r.r)
+#define EPS2 1E-10 // for (pT.A.p)/(rT.r)
+	static doublecomplex ro_old;
+
+	switch (ph) {
+		case PHASE_VARS:
+			scalars[0].ptr=&ro_old;
+			scalars[0].size=sizeof(doublecomplex);
+			return;
+		case PHASE_INIT:
+			return; // no specific initialization required
+		case PHASE_ITER:
+			Dz("Current iteration: "GFORM_DEBUG,(double)niter);
+			if (niter==1) {
+				equate_matrices(pvecArray, rvecArray);
+			}
+			// alfa=(pT.A.p)^-1.(rT.r)
+			// s=BLOCK_SIZE
+			for(size_t j=0;j<BLOCK_SIZE;j++){
+				MatVec_wrapper(pvecArray[j],AvecbufferArray[j],NULL,false,&Timing_OneIterMVP,&Timing_OneIterMVPComm);
+			}
+			mTAm(po_Matx, pvecArray, AvecbufferArray); // s*s
+			// use one array for po, po^-1
+			inv(po_Matx);// s*s
+			mTm(ro_Matx, rvecArray); // s*s
+			sq_matrix_mult(alfa_Matx, po_Matx, ro_Matx); //s*s
+
+			// x_new=x_old + p_old*alfa
+			// use one array for x_old, x_new.
+			X_new(xvecArray, pvecArray, alfa_Matx);
+
+			//r_new=r_old - A*p_old*alfa
+			R_new(rvecArray_new, rvecArray, AvecbufferArray, alfa_Matx);
+
+			// ro_old_Matx^-1
+			// use one array for ro, ro^-1
+			inv(ro_Matx);
+			// ro_new_Matx
+			mTm(ro_new_Matx, rvecArray_new); // s*s
+			// beta_Matx=ro_old_Matx^-1.ro_new_Matx
+			sq_matrix_mult(beta_Matx, ro_Matx, ro_new_Matx);
+			// p_new=r_new + p_old*beta
+			P_new(pvecArray_new, rvecArray_new, pvecArray, beta_Matx);
+
+			equate_matrices(rvecArray, rvecArray_new);
+			equate_matrices(pvecArray, pvecArray_new);
+
+			// find the maximum |r_k+1|^2:
+			inprodRp1=find_max();
+
 			return; // end of PHASE_ITER
 	}
 	LogError(ONE_POS,"Unknown phase (%d) of the iterative solver",(int)ph);
@@ -1389,8 +1455,18 @@ static const char *CalcInitField(double zero_resid,const enum incpol which)
 				return "x_0 = E_inc";
 			}
 		case IF_ZERO:
-			nInit(xvec); // x_0=0
-			nCopy(rvec,pvec); // r_0=b
+			if (IterMethod==IT_BICG_BLOCK) {
+				for(size_t i=0;i<BLOCK_SIZE;i++) {
+					nInit(xvecArray[i]); // x_0=0
+					for(size_t j=0;j<local_nRows;j++) {
+						rvecArray[i][j]=pvecArray[i][j]; // r_0=b
+					}
+				}
+			}
+			else {
+				nInit(xvec); // x_0=0
+				nCopy(rvec,pvec); // r_0=b
+			}
 			inprodR=zero_resid;
 			return "x_0 = 0";
 		case IF_INC:
@@ -1441,7 +1517,15 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 	tstart=GET_TIME();
 	matvec_ready=false; // can be set to true only in CalcInitField (if !load_chpoint)
 	if (!load_chpoint) {
-		nMult_mat(pvec,Einc,cc_sqrt);
+		if (IterMethod==IT_BICG_BLOCK) {
+			for(size_t i=0;i<BLOCK_SIZE;i++) {
+				nMult_mat(pvecArray[i],EincArray[i],cc_sqrt);
+			}
+			pvec=pvecArray[0];
+		}
+		else {
+			nMult_mat(pvec,Einc,cc_sqrt);
+		}
 		temp=nNorm2(pvec,&Timing_InitIterComm); // |r_0|^2 when x_0=0
 		resid_scale=1/temp;
 		epsB=iter_eps*iter_eps*temp;

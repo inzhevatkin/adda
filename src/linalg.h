@@ -20,6 +20,8 @@
 // project headers
 #include "timing.h"   // for TIME_TYPE
 #include "types.h"    // for doublecomplex
+#include <C:\Users\konstantin\Documents\Compiled-lapack\include\lapacke.h>
+#include <C:\Users\konstantin\Documents\Compiled-lapack\include\cblas.h>
 
 void nInit(doublecomplex * restrict a);
 void nCopy(doublecomplex * restrict a,const doublecomplex * restrict b);
@@ -66,5 +68,17 @@ void nMultSelf_cmplx(doublecomplex * restrict a,const doublecomplex c);
 void nMult_mat(doublecomplex * restrict a,const doublecomplex * restrict b,doublecomplex (* restrict c)[3]);
 void nMultSelf_mat(doublecomplex * restrict a,doublecomplex (* restrict c)[3]);
 void nConj(doublecomplex * restrict a);
+
+void inv(doublecomplex ** ro);
+void matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t rows, size_t columns);
+void equate_matrices(doublecomplex ** a, doublecomplex ** b);
+void mTm(doublecomplex ** res, doublecomplex ** a);
+void mTAm(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b);
+void X_new(doublecomplex ** res, doublecomplex ** p_old, doublecomplex ** alfa);
+void R_new(doublecomplex ** res, doublecomplex ** r_old, doublecomplex ** Ap, doublecomplex ** alfa);
+void P_new(doublecomplex ** res, doublecomplex ** r_new, doublecomplex ** p_old, doublecomplex ** beta);
+double find_max();
+void sq_matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b);
+
 
 #endif // __linalg_h

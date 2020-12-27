@@ -111,3 +111,26 @@ extern int * restrict position_full;
 #endif // !SPARSE
 
 #endif // __vars_h
+
+#define BLOCK_SIZE 10
+
+doublecomplex **xvecArray; // n*s
+doublecomplex **rvecArray; // n*s
+doublecomplex **rvecArray_new; // n*s
+doublecomplex **pvecArray; // n*s
+doublecomplex **pvecArray_new; // n*s
+doublecomplex **ro_Matx; // s*s
+doublecomplex **ro_new_Matx; // s*s
+doublecomplex **po_Matx; // s*s
+doublecomplex **po_new_Matx; // s*s
+doublecomplex **beta_Matx; // s*s
+doublecomplex **alfa_Matx; // s*s
+doublecomplex **pvec_koeff; // used to hold the result of pvec-alfa/beta product. n*s
+
+doublecomplex **EincArray;    // EincArray[i][j], i - column, j - row. n*s
+doublecomplex **AvecbufferArray; // used to hold the result of matrix-vector products,
+								 // similar to non-block algorithm.
+								 // n*s
+doublecomplex *inv_auxiliary;
+doublecomplex *mutrix_mult_B_auxiliary;
+doublecomplex *mutrix_mult_C_auxiliary;

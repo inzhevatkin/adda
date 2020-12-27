@@ -175,8 +175,10 @@ override EXTRA_FLAGS +=
 #FFTW3_LIB_PATH := $(FFTWLIB)
 #FFTW3_INC_PATH := $(HOME)/include
 #FFTW3_LIB_PATH := $(HOME)/lib
-#FFTW3_INC_PATH := "$(abspath ./../lib)"
-#FFTW3_LIB_PATH := "$(abspath ./../lib)"
+FFTW3_INC_PATH := "$(abspath ./../../../fftw-3.3.5-dll64)"
+FFTW3_LIB_PATH := "$(abspath ./../../../fftw-3.3.5-dll64)"
+LAPACK_INC_PATH := "$(abspath ./../../../Compiled-lapack/include)"
+LAPACK_LIB_PATH := "$(abspath ./../../../Compiled-lapack/lib)"
 
 # --Fortran library path--
 # If your environment does not specify search path for Fortran libraries, you may get errors during linking of ADDA.
@@ -268,10 +270,10 @@ else
     $(info FFTW3)
     LDLIBS += -lfftw3
     ifdef FFTW3_INC_PATH
-      CFLAGS += -I$(FFTW3_INC_PATH)
+      CFLAGS += -I$(FFTW3_INC_PATH) -I$(LAPACK_INC_PATH)
     endif
     ifdef FFTW3_LIB_PATH
-      LDFLAGS += -L$(FFTW3_LIB_PATH)
+      LDFLAGS += -L$(FFTW3_LIB_PATH) -L$(LAPACK_LIB_PATH)
     endif
   endif
   ifneq ($(filter CLFFT_APPLE,$(OPTIONS)),)
@@ -351,7 +353,7 @@ FOPT   = $(COPT)
 CPPOPT = $(COPT)
 # This is for additional libraries that may be needed when using C linker on Fortran or C++ sources (using Fortran or
 # C++ linker may also cause some problems, i.e. for MPI mode). Particular values are assigned for each compiler below.
-FLIBS   +=
+FLIBS   += -llibblas -llibcblas -lliblapack -lliblapacke
 CPPLIBS +=
 # Debugging flag is assumed the same for all compilers
 DBGFLAG := -g
@@ -381,7 +383,7 @@ ifeq ($(COMPILER),gnu)
   # Use gfortran if available (GCC 4 and later), otherwise try g77
   ifeq ($(shell which gfortran > /dev/null 2>&1 && echo 0),0)
     CF    := gfortran
-    FLIBS += -lgfortran
+    FLIBS += -lgfortran -lquadmath 
   else
     # This is not expected to work for f90 sources but we keep it for now
     $(warning Cannot locate gfortran - trying to continue with g77. If any issues arise, install gfortran)

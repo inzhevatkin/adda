@@ -124,6 +124,155 @@ doublecomplex nDotProdSelf_conj(const doublecomplex * restrict a,TIME_TYPE *comm
 
 //======================================================================================================================
 
+void equate_matrices(doublecomplex ** a, doublecomplex ** b) {
+	for(size_t i=0;i<BLOCK_SIZE;i++) {
+		// number of rows = local_nRows.
+		nCopy(a[i], b[i]);
+	}
+}
+
+void inv(doublecomplex ** ro){
+	size_t i, j, idx;
+	size_t N=BLOCK_SIZE;
+    for (i = 0; i != N; ++i) { //row
+        for (j = 0; j != N; ++j){ //column
+            idx = i*N + j;
+            inv_auxiliary[idx] = ro[j][i]; //(MAT[i][j]).real() + _Complex_I*(MAT[i][j]).imag();
+        }
+    }
+    int* IPIV = malloc(N*sizeof(int));
+    //LU factorization
+    LAPACKE_zgetrf(LAPACK_ROW_MAJOR, N, N, inv_auxiliary, N, IPIV);
+    LAPACKE_zgetri(LAPACK_ROW_MAJOR, N, inv_auxiliary, N, IPIV);
+    for (i = 0; i != N; ++i){ //row
+        for (j = 0; j != N; ++j){ //column
+            idx = i*N + j;
+            ro[j][i] = inv_auxiliary[idx];
+        }
+    }
+    free(IPIV);
+}
+
+void sq_matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b){
+	size_t i, j, idx;
+	size_t size = BLOCK_SIZE;
+	doublecomplex * A = inv_auxiliary;
+	doublecomplex * B = mutrix_mult_B_auxiliary;
+	doublecomplex * C = mutrix_mult_C_auxiliary;
+	for (i = 0; i != size; ++i) { //row
+		for (j = 0; j != size; ++j){ //column
+			idx = i*size + j;
+			A[idx] = a[j][i];
+			B[idx] = b[j][i];
+		}
+	}
+	const CBLAS_LAYOUT layout=CblasRowMajor;//CblasRowMajor;
+	const CBLAS_TRANSPOSE TRANS=CblasNoTrans; // no operation
+	const int M = (int)size; // the number  of rows  of the  matrix op( A ),
+	const int N = (int)size; // the number  of columns of the matrix op( B ),
+	const int K = (int)size; // K  specifies  the number of columns of the matrix
+	    		             // op( A ) and the number of rows of the matrix op( B ),
+	double complex ALPHA = 1.0;
+	const int LDA = (int)size;
+	const int LDB = (int)size;
+	doublecomplex BETA = 0.0;
+	const int LDC = (int)size;
+	cblas_zgemm(layout, TRANS, TRANS, M, N, K, &ALPHA, A, LDA, B, LDB, &BETA, C, LDC);
+	for (i = 0; i != size; ++i){ //row
+		for (j = 0; j != size; ++j){ //column
+			idx = i*size + j;
+			res[j][i] = C[idx];
+		}
+	}
+}
+
+void matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t rows, size_t columns){
+	doublecomplex sum;
+	for (size_t j=0;j<rows;j++) { //row of first matrix
+		for (size_t k=0;k<columns;k++) { //column of second matrix
+			sum=0;
+			for (size_t i=0;i<columns;i++) sum+=a[i][j]*b[k][i];
+			res[k][j]=sum;
+		}
+	}
+}
+
+void mTm(doublecomplex ** res, doublecomplex ** a) {
+	size_t j, k, i;
+	doublecomplex sum;
+
+	for (j=0;j<BLOCK_SIZE;j++) { //columns
+		for (k=0;k<BLOCK_SIZE;k++) { //columns
+			sum=0;
+			for (i=0;i<local_nRows;i++) sum+=a[j][i]*a[k][i];
+			res[j][k]=sum;
+		}
+	}
+}
+
+void mTAm(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b){
+	doublecomplex sum;
+
+	for (size_t j=0;j<BLOCK_SIZE;j++) { // column of a
+		for (size_t k=0;k<BLOCK_SIZE;k++) { // column of b
+			sum=0;
+			for (size_t i=0;i<local_nRows;i++) sum+=a[j][i]*b[k][i];
+			res[j][k]=sum;
+		}
+	}
+}
+
+
+void X_new(doublecomplex ** res, doublecomplex ** p_old, doublecomplex ** alfa)
+// x_new=x_old+p_old*alfa
+{
+	matrix_mult(pvec_koeff, p_old, alfa, local_nRows, BLOCK_SIZE);
+	for (size_t j=0;j<BLOCK_SIZE;j++) {
+		for (size_t k=0;k<local_nRows;k++) {
+			res[j][k]+=pvec_koeff[j][k];
+		}
+	}
+}
+
+void R_new(doublecomplex ** res, doublecomplex ** r_old, doublecomplex ** Ap, doublecomplex ** alfa)
+//r_new=r_old - A*p_old*alfa
+{
+	size_t j, k;
+	matrix_mult(res, Ap, alfa, local_nRows, BLOCK_SIZE);
+	for (j=0;j<BLOCK_SIZE;j++) {
+		for (k=0;k<local_nRows;k++) {
+			res[j][k]=-res[j][k]+r_old[j][k];
+		}
+	}
+}
+
+void P_new(doublecomplex ** res, doublecomplex ** r_new, doublecomplex ** p_old, doublecomplex ** beta)
+// p_new=r_new+p_old*beta
+{
+	size_t j, k;
+	matrix_mult(pvec_koeff, p_old, beta, local_nRows, BLOCK_SIZE);
+	for (j=0;j<BLOCK_SIZE;j++) {
+		for (k=0;k<local_nRows;k++) {
+			res[j][k]=r_new[j][k]+pvec_koeff[j][k];
+		}
+	}
+}
+
+double find_max() {
+	double sum_cur;
+	double sum_max=0;
+	for(size_t i=0;i<BLOCK_SIZE;i++){
+		sum_cur=0;
+		for(size_t j=0;j<local_nRows;j++){
+			sum_cur += cAbs2(rvecArray_new[i][j]);
+		}
+		if(sum_max<sum_cur) sum_max=sum_cur;
+	}
+	return sum_max;
+}
+
+//======================================================================================================================
+
 doublecomplex nDotProdSelf_conj_Norm2(const doublecomplex * restrict a,double * restrict norm,TIME_TYPE *comm_timing)
 // Computes both conjugate dot product of vector on itself (c=a.a*) and its Hermitian squared norm=||a||^2
 {

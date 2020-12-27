@@ -510,7 +510,7 @@ static struct opt_struct options[]={
 		 * !!! If subarguments are added, second-to-last argument should be changed from 1 to UNDEF, and consistency
 		 * test for number of arguments should be implemented in PARSE_FUNC(int_surf) below.
 		 */
-	{PAR(iter),"{bcgs2|bicg|bicgstab|cgnr|csym|qmr|qmr2}","Sets the iterative solver.\n"
+	{PAR(iter),"{bcgs2|bicg|bicgblock|bicgstab|cgnr|csym|qmr|qmr2}","Sets the iterative solver.\n"
 		"Default: qmr",1,NULL},
 		/* TO ADD NEW ITERATIVE SOLVER
 		 * add the short name, used to define the new iterative solver in the command line, to the list "{...}" in the
@@ -1235,6 +1235,7 @@ PARSE_FUNC(iter)
 {
 	if (strcmp(argv[1],"bcgs2")==0) IterMethod=IT_BCGS2;
 	else if (strcmp(argv[1],"bicg")==0) IterMethod=IT_BICG_CS;
+	else if (strcmp(argv[1],"bicgblock")==0) IterMethod=IT_BICG_BLOCK;
 	else if (strcmp(argv[1],"bicgstab")==0) IterMethod=IT_BICGSTAB;
 	else if (strcmp(argv[1],"cgnr")==0) IterMethod=IT_CGNR;
 	else if (strcmp(argv[1],"csym")==0) IterMethod=IT_CSYM;
@@ -2508,6 +2509,7 @@ void PrintInfo(void)
 		switch (IterMethod) {
 			case IT_BCGS2: fprintf(logfile,"Enhanced Bi-CG Stabilized(2)\n"); break;
 			case IT_BICG_CS: fprintf(logfile,"Bi-CG (complex symmetric)\n"); break;
+			case IT_BICG_BLOCK:fprintf(logfile,"Block Bi-CG (complex symmetric)\n"); break;
 			case IT_BICGSTAB: fprintf(logfile,"Bi-CG Stabilized\n"); break;
 			case IT_CGNR: fprintf(logfile,"CGNR\n"); break;
 			case IT_CSYM: fprintf(logfile,"CSYM\n"); break;

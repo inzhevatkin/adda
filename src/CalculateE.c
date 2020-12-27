@@ -852,7 +852,21 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 	tstart=GET_TIME();
 	// calculate the incident field Einc; vector b=Einc*cc_sqrt
 	D("Generating B");
-	GenerateB (which,Einc);
+	// here I set a random value for prop.
+	D("GenerateB start");
+	if (IterMethod==IT_BICG_BLOCK) {
+		for(size_t i=0;i<BLOCK_SIZE;i++) {
+			for(size_t j=0;j<3;j++){
+				prop[j]=rand();
+			}
+			GenerateB (which,EincArray[i]);
+		}
+		// Save the incident beam for one case only
+		Einc=EincArray[0];
+	}
+	else {
+		GenerateB (which,Einc);
+	}
 	if (store_beam) StoreFields(which,Einc,NULL,F_BEAM,F_BEAM_TMP,"Einc","Incident beam");
 	Timing_IncBeam = GET_TIME() - tstart;
 	// calculate solution vector x

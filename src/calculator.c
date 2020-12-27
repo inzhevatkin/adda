@@ -747,6 +747,44 @@ static void AllocateEverything(void)
 			}
 			memory+=2*tmp;
 			break;
+		case IT_BICG_BLOCK:
+			EincArray=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+			rvecArray=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+			rvecArray_new=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+			pvecArray=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+			pvecArray_new=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+			xvecArray=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+			AvecbufferArray=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+			pvec_koeff=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+
+			ro_Matx=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+			ro_new_Matx=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+			po_Matx=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+			po_new_Matx=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+			beta_Matx=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+			alfa_Matx=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+			inv_auxiliary=(complex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(complex));
+			mutrix_mult_B_auxiliary=(complex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(complex));
+			mutrix_mult_C_auxiliary=(complex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(complex));
+
+			for(size_t i=0;i<BLOCK_SIZE;i++) {
+				MALLOC_VECTOR(EincArray[i],complex,local_nRows,ALL);
+				MALLOC_VECTOR(rvecArray[i],complex,local_nRows,ALL);
+				MALLOC_VECTOR(rvecArray_new[i],complex,local_nRows,ALL);
+				MALLOC_VECTOR(pvecArray[i],complex,local_nRows,ALL);
+				MALLOC_VECTOR(pvecArray_new[i],complex,local_nRows,ALL);
+				MALLOC_VECTOR(xvecArray[i],complex,local_nRows,ALL);
+				MALLOC_VECTOR(AvecbufferArray[i],complex,local_nRows,ALL);
+				MALLOC_VECTOR(pvec_koeff[i],complex,local_nRows,ALL);
+
+				MALLOC_VECTOR(ro_Matx[i],complex,BLOCK_SIZE,ALL);
+				MALLOC_VECTOR(ro_new_Matx[i],complex,BLOCK_SIZE,ALL);
+				MALLOC_VECTOR(po_Matx[i],complex,BLOCK_SIZE,ALL);
+				MALLOC_VECTOR(po_new_Matx[i],complex,BLOCK_SIZE,ALL);
+				MALLOC_VECTOR(beta_Matx[i],complex,BLOCK_SIZE,ALL);
+				MALLOC_VECTOR(alfa_Matx[i],complex,BLOCK_SIZE,ALL);
+			}
+			break;
 	}
 	/* TO ADD NEW ITERATIVE SOLVER
 	 * Add here a case corresponding to the new iterative solver. If the new iterative solver requires any extra vectors
@@ -914,6 +952,41 @@ void FreeEverything(void)
 		case IT_QMR_CS_2:
 			Free_cVector(vec1);
 			Free_cVector(vec2);
+			break;
+		case IT_BICG_BLOCK:
+			for(size_t i=0;i<BLOCK_SIZE;i++) {
+				Free_cVector(xvecArray[i]);
+				Free_cVector(rvecArray[i]);
+				Free_cVector(rvecArray_new[i]);
+				Free_cVector(pvecArray[i]);
+				Free_cVector(pvecArray_new[i]);
+				Free_cVector(ro_Matx[i]);
+				Free_cVector(ro_new_Matx[i]);
+				Free_cVector(po_Matx[i]);
+				Free_cVector(po_new_Matx[i]);
+				Free_cVector(beta_Matx[i]);
+				Free_cVector(alfa_Matx[i]);
+				Free_cVector(pvec_koeff[i]);
+				Free_cVector(EincArray[i]);
+				Free_cVector(AvecbufferArray[i]);
+			}
+			free(xvecArray);
+			free(rvecArray);
+			free(rvecArray_new);
+			free(pvecArray);
+			free(pvecArray_new);
+			free(ro_Matx);
+			free(ro_new_Matx);
+			free(po_Matx);
+			free(po_new_Matx);
+			free(beta_Matx);
+			free(alfa_Matx);
+			free(pvec_koeff);
+			free(EincArray);
+			free(AvecbufferArray);
+			free(inv_auxiliary);
+			free(mutrix_mult_B_auxiliary);
+			free(mutrix_mult_C_auxiliary);
 			break;
 	}
 	/* TO ADD NEW ITERATIVE SOLVER
