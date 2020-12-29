@@ -77,7 +77,7 @@ void mTAm(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b);
 void X_new(doublecomplex ** res, doublecomplex ** p_old, doublecomplex ** alfa);
 void R_new(doublecomplex ** res, doublecomplex ** r_old, doublecomplex ** Ap, doublecomplex ** alfa);
 void P_new(doublecomplex ** res, doublecomplex ** r_new, doublecomplex ** p_old, doublecomplex ** beta);
-double find_max();
+double find_max(void);
 void sq_matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b);
 
 

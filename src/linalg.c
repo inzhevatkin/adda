@@ -258,7 +258,7 @@ void P_new(doublecomplex ** res, doublecomplex ** r_new, doublecomplex ** p_old,
 	}
 }
 
-double find_max() {
+double find_max(void) {
 	double sum_cur;
 	double sum_max=0;
 	for(size_t i=0;i<BLOCK_SIZE;i++){

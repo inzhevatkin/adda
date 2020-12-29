@@ -861,13 +861,13 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 			}
 			GenerateB (which,EincArray[i]);
 		}
-		// Save the incident beam for one case only
-		Einc=EincArray[0];
+		if (store_beam) StoreFields(which,EincArray[0],NULL,F_BEAM,F_BEAM_TMP,"Einc","Incident beam");
+
 	}
 	else {
 		GenerateB (which,Einc);
+		if (store_beam) StoreFields(which,Einc,NULL,F_BEAM,F_BEAM_TMP,"Einc","Incident beam");
 	}
-	if (store_beam) StoreFields(which,Einc,NULL,F_BEAM,F_BEAM_TMP,"Einc","Incident beam");
 	Timing_IncBeam = GET_TIME() - tstart;
 	// calculate solution vector x
 	D("Iterative solver started");

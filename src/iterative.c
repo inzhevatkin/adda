@@ -1521,12 +1521,12 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 			for(size_t i=0;i<BLOCK_SIZE;i++) {
 				nMult_mat(pvecArray[i],EincArray[i],cc_sqrt);
 			}
-			pvec=pvecArray[0];
+			temp=nNorm2(pvecArray[0],&Timing_InitIterComm); // |r_0|^2 when x_0=0
 		}
 		else {
 			nMult_mat(pvec,Einc,cc_sqrt);
+			temp=nNorm2(pvec,&Timing_InitIterComm); // |r_0|^2 when x_0=0
 		}
-		temp=nNorm2(pvec,&Timing_InitIterComm); // |r_0|^2 when x_0=0
 		resid_scale=1/temp;
 		epsB=iter_eps*iter_eps*temp;
 		// Calculate initial field

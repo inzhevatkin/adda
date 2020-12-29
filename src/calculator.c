@@ -768,21 +768,21 @@ static void AllocateEverything(void)
 			mutrix_mult_C_auxiliary=(complex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(complex));
 
 			for(size_t i=0;i<BLOCK_SIZE;i++) {
-				MALLOC_VECTOR(EincArray[i],complex,local_nRows,ALL);
-				MALLOC_VECTOR(rvecArray[i],complex,local_nRows,ALL);
-				MALLOC_VECTOR(rvecArray_new[i],complex,local_nRows,ALL);
-				MALLOC_VECTOR(pvecArray[i],complex,local_nRows,ALL);
-				MALLOC_VECTOR(pvecArray_new[i],complex,local_nRows,ALL);
-				MALLOC_VECTOR(xvecArray[i],complex,local_nRows,ALL);
-				MALLOC_VECTOR(AvecbufferArray[i],complex,local_nRows,ALL);
-				MALLOC_VECTOR(pvec_koeff[i],complex,local_nRows,ALL);
+				EincArray[i]=malloc(local_nRows*sizeof(complex));
+				rvecArray[i]=malloc(local_nRows*sizeof(complex));
+				rvecArray_new[i]=malloc(local_nRows*sizeof(complex));
+				pvecArray[i]=malloc(local_nRows*sizeof(complex));
+				pvecArray_new[i]=malloc(local_nRows*sizeof(complex));
+				xvecArray[i]=malloc(local_nRows*sizeof(complex));
+				AvecbufferArray[i]=malloc(local_nRows*sizeof(complex));
+				pvec_koeff[i]=malloc(local_nRows*sizeof(complex));
 
-				MALLOC_VECTOR(ro_Matx[i],complex,BLOCK_SIZE,ALL);
-				MALLOC_VECTOR(ro_new_Matx[i],complex,BLOCK_SIZE,ALL);
-				MALLOC_VECTOR(po_Matx[i],complex,BLOCK_SIZE,ALL);
-				MALLOC_VECTOR(po_new_Matx[i],complex,BLOCK_SIZE,ALL);
-				MALLOC_VECTOR(beta_Matx[i],complex,BLOCK_SIZE,ALL);
-				MALLOC_VECTOR(alfa_Matx[i],complex,BLOCK_SIZE,ALL);
+				ro_Matx[i]=malloc(BLOCK_SIZE*sizeof(complex));
+				ro_new_Matx[i]=malloc(BLOCK_SIZE*sizeof(complex));
+				po_Matx[i]=malloc(BLOCK_SIZE*sizeof(complex));
+				po_new_Matx[i]=malloc(BLOCK_SIZE*sizeof(complex));
+				beta_Matx[i]=malloc(BLOCK_SIZE*sizeof(complex));
+				alfa_Matx[i]=malloc(BLOCK_SIZE*sizeof(complex));
 			}
 			break;
 	}
@@ -955,20 +955,20 @@ void FreeEverything(void)
 			break;
 		case IT_BICG_BLOCK:
 			for(size_t i=0;i<BLOCK_SIZE;i++) {
-				Free_cVector(xvecArray[i]);
-				Free_cVector(rvecArray[i]);
-				Free_cVector(rvecArray_new[i]);
-				Free_cVector(pvecArray[i]);
-				Free_cVector(pvecArray_new[i]);
-				Free_cVector(ro_Matx[i]);
-				Free_cVector(ro_new_Matx[i]);
-				Free_cVector(po_Matx[i]);
-				Free_cVector(po_new_Matx[i]);
-				Free_cVector(beta_Matx[i]);
-				Free_cVector(alfa_Matx[i]);
-				Free_cVector(pvec_koeff[i]);
-				Free_cVector(EincArray[i]);
-				Free_cVector(AvecbufferArray[i]);
+				free(xvecArray[i]);
+				free(rvecArray[i]);
+				free(rvecArray_new[i]);
+				free(pvecArray[i]);
+				free(pvecArray_new[i]);
+				free(ro_Matx[i]);
+				free(ro_new_Matx[i]);
+				free(po_Matx[i]);
+				free(po_new_Matx[i]);
+				free(beta_Matx[i]);
+				free(alfa_Matx[i]);
+				free(pvec_koeff[i]);
+				free(EincArray[i]);
+				free(AvecbufferArray[i]);
 			}
 			free(xvecArray);
 			free(rvecArray);
@@ -1094,6 +1094,8 @@ void Calculator (void)
 		else while (!finish_avg) orient_integrand(0,0,NULL);
 	}
 	else calculate_one_orientation(NULL);
+	D("calculate_one_orientation finished");
 	// cleaning
 	FreeEverything();
+	D("FreeEverything finished");
 }
