@@ -205,7 +205,7 @@ void mTm(doublecomplex ** res, doublecomplex ** a) {
 		for (k=0;k<BLOCK_SIZE;k++) { //columns
 			sum=0;
 			for (i=0;i<local_nRows;i++) sum+=a[j][i]*a[k][i];
-			res[j][k]=sum;
+			res[k][j]=sum;
 		}
 	}
 }
@@ -217,7 +217,7 @@ void mTAm(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b){
 		for (size_t k=0;k<BLOCK_SIZE;k++) { // column of b
 			sum=0;
 			for (size_t i=0;i<local_nRows;i++) sum+=a[j][i]*b[k][i];
-			res[j][k]=sum;
+			res[k][j]=sum;
 		}
 	}
 }
@@ -227,8 +227,8 @@ void X_new(doublecomplex ** res, doublecomplex ** p_old, doublecomplex ** alfa)
 // x_new=x_old+p_old*alfa
 {
 	matrix_mult(pvec_koeff, p_old, alfa, local_nRows, BLOCK_SIZE);
-	for (size_t j=0;j<BLOCK_SIZE;j++) {
-		for (size_t k=0;k<local_nRows;k++) {
+	for (size_t j=0;j<BLOCK_SIZE;j++) { //column
+		for (size_t k=0;k<local_nRows;k++) { //row
 			res[j][k]+=pvec_koeff[j][k];
 		}
 	}
@@ -237,10 +237,9 @@ void X_new(doublecomplex ** res, doublecomplex ** p_old, doublecomplex ** alfa)
 void R_new(doublecomplex ** res, doublecomplex ** r_old, doublecomplex ** Ap, doublecomplex ** alfa)
 //r_new=r_old - A*p_old*alfa
 {
-	size_t j, k;
 	matrix_mult(res, Ap, alfa, local_nRows, BLOCK_SIZE);
-	for (j=0;j<BLOCK_SIZE;j++) {
-		for (k=0;k<local_nRows;k++) {
+	for (size_t j=0;j<BLOCK_SIZE;j++) {
+		for (size_t k=0;k<local_nRows;k++) {
 			res[j][k]=-res[j][k]+r_old[j][k];
 		}
 	}

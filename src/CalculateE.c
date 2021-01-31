@@ -848,6 +848,7 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 {
 	int exit_status;
 	TIME_TYPE tstart;
+	double norm;
 
 	tstart=GET_TIME();
 	// calculate the incident field Einc; vector b=Einc*cc_sqrt
@@ -859,6 +860,11 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 			for(size_t j=0;j<3;j++){
 				prop[j]=rand();
 			}
+			// normalization
+			norm = sqrt(pow(prop[0],2)+pow(prop[1],2)+pow(prop[2],2));
+			prop[0]/=norm;
+			prop[1]/=norm;
+			prop[2]/=norm;
 			GenerateB (which,EincArray[i]);
 		}
 		if (store_beam) StoreFields(which,EincArray[0],NULL,F_BEAM,F_BEAM_TMP,"Einc","Incident beam");

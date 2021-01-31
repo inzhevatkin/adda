@@ -2,3 +2,11 @@
 # including them into $GIT_DIR/info/exclude (in this repository) or globally into $XDG_CONFIG_HOME/git/ignore
 # See https://git-scm.com/docs/gitignore 
 .DS_Store
+.settings/language.settings.xml
+.settings/language.settings.xml
+src/seq/bicg/CrossSec-Y
+src/seq/bicg/log
+src/seq/bicg/mueller
+src/seq/block10/CrossSec-Y
+src/seq/block10/log
+src/seq/block10/mueller

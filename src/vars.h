@@ -113,7 +113,7 @@ extern int * restrict position_full;
 #endif // __vars_h
 
 #define BLOCK_SIZE 10
-
+// the first index of the arrays is a column, the second is a row
 doublecomplex **xvecArray; // n*s
 doublecomplex **rvecArray; // n*s
 doublecomplex **rvecArray_new; // n*s
