@@ -848,15 +848,31 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 {
 	int exit_status;
 	TIME_TYPE tstart;
-	double norm;
+	double norm, teta, dt;
+	dt=PI/(2*BLOCK_SIZE);
+	teta=-dt;
 
 	tstart=GET_TIME();
 	// calculate the incident field Einc; vector b=Einc*cc_sqrt
 	D("Generating B");
-	// here I set a random value for prop.
 	D("GenerateB start");
 	if (IterMethod==IT_BICG_BLOCK) {
 		for(size_t i=0;i<BLOCK_SIZE;i++) {
+			//teta=(double)rand()/RAND_MAX*PI/2; // teta changes from 0 to PI/2
+			teta+=dt;
+			fprintf(logfile,"teta=%f \n", (double)teta);
+			prop[0]=sin(teta);
+			prop[1]=0;
+			prop[2]=cos(teta);
+			// normalization
+			norm = sqrt(pow(prop[0],2)+pow(prop[1],2)+pow(prop[2],2));
+			prop[0]/=norm;
+			prop[1]/=norm;
+			prop[2]/=norm;
+			GenerateB (which,EincArray[i]);
+
+
+			/*
 			for(size_t j=0;j<3;j++){
 				prop[j]=rand();
 			}
@@ -866,6 +882,15 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 			prop[1]/=norm;
 			prop[2]/=norm;
 			GenerateB (which,EincArray[i]);
+			*/
+
+			// реяр
+			/*
+			prop[0]=0;
+			prop[1]=0;
+			prop[2]=1;
+			GenerateB (which,EincArray[i]);
+			*/
 		}
 		if (store_beam) StoreFields(which,EincArray[0],NULL,F_BEAM,F_BEAM_TMP,"Einc","Incident beam");
 

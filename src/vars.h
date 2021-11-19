@@ -116,9 +116,9 @@ extern int * restrict position_full;
 // the first index of the arrays is a column, the second is a row
 doublecomplex **xvecArray; // n*s
 doublecomplex **rvecArray; // n*s
-doublecomplex **rvecArray_new; // n*s
+doublecomplex **rMult;
 doublecomplex **pvecArray; // n*s
-doublecomplex **pvecArray_new; // n*s
+doublecomplex **pMult;
 doublecomplex **ro_Matx; // s*s
 doublecomplex **ro_new_Matx; // s*s
 doublecomplex **po_Matx; // s*s
@@ -134,3 +134,11 @@ doublecomplex **AvecbufferArray; // used to hold the result of matrix-vector pro
 doublecomplex *inv_auxiliary;
 doublecomplex *mutrix_mult_B_auxiliary;
 doublecomplex *mutrix_mult_C_auxiliary;
+
+FILE * log_poMatx;
+FILE * log_roMatx;
+FILE * poMatx_norm;
+FILE * roMatx_norm;
+
+doublecomplex *tau; // QR decomposition
+doublecomplex ** a_matrix;

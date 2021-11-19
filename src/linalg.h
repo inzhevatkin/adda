@@ -20,6 +20,7 @@
 // project headers
 #include "timing.h"   // for TIME_TYPE
 #include "types.h"    // for doublecomplex
+#include <stdio.h>
 #include <C:\Users\konstantin\Documents\Compiled-lapack\include\lapacke.h>
 #include <C:\Users\konstantin\Documents\Compiled-lapack\include\cblas.h>
 
@@ -69,14 +70,17 @@ void nMult_mat(doublecomplex * restrict a,const doublecomplex * restrict b,doubl
 void nMultSelf_mat(doublecomplex * restrict a,doublecomplex (* restrict c)[3]);
 void nConj(doublecomplex * restrict a);
 
-void inv(doublecomplex ** ro);
+void inv(doublecomplex ** ro, FILE * log, FILE * norm_log);
 void matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t rows, size_t columns);
+void matrix_mult_sq(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t size);
 void equate_matrices(doublecomplex ** a, doublecomplex ** b);
 void mTm(doublecomplex ** res, doublecomplex ** a);
 void mTAm(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b);
+void aTb(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, TIME_TYPE *comm_timing);
 void X_new(doublecomplex ** res, doublecomplex ** p_old, doublecomplex ** alfa);
 void R_new(doublecomplex ** res, doublecomplex ** r_old, doublecomplex ** Ap, doublecomplex ** alfa);
 void P_new(doublecomplex ** res, doublecomplex ** r_new, doublecomplex ** p_old, doublecomplex ** beta);
+void vector_new(doublecomplex ** res, doublecomplex ** a_old, doublecomplex ** b_old, doublecomplex ** k, int sign);
 double find_max(void);
 void sq_matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b);
 

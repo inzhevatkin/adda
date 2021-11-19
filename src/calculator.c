@@ -750,9 +750,9 @@ static void AllocateEverything(void)
 		case IT_BICG_BLOCK:
 			EincArray=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
 			rvecArray=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
-			rvecArray_new=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+			rMult=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
 			pvecArray=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
-			pvecArray_new=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+			pMult=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
 			xvecArray=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
 			AvecbufferArray=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
 			pvec_koeff=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
@@ -767,15 +767,19 @@ static void AllocateEverything(void)
 			mutrix_mult_B_auxiliary=(complex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(complex));
 			mutrix_mult_C_auxiliary=(complex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(complex));
 
+			tau=(complex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(complex));
+			a_matrix=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+
 			for(size_t i=0;i<BLOCK_SIZE;i++) {
 				EincArray[i]=malloc(local_nRows*sizeof(complex));
 				rvecArray[i]=malloc(local_nRows*sizeof(complex));
-				rvecArray_new[i]=malloc(local_nRows*sizeof(complex));
+				rMult[i]=malloc(local_nRows*sizeof(complex));
 				pvecArray[i]=malloc(local_nRows*sizeof(complex));
-				pvecArray_new[i]=malloc(local_nRows*sizeof(complex));
+				pMult[i]=malloc(local_nRows*sizeof(complex));
 				xvecArray[i]=malloc(local_nRows*sizeof(complex));
 				AvecbufferArray[i]=malloc(local_nRows*sizeof(complex));
 				pvec_koeff[i]=malloc(local_nRows*sizeof(complex));
+				a_matrix[i]=malloc(local_nRows*sizeof(complex));
 
 				ro_Matx[i]=malloc(BLOCK_SIZE*sizeof(complex));
 				ro_new_Matx[i]=malloc(BLOCK_SIZE*sizeof(complex));
@@ -957,9 +961,9 @@ void FreeEverything(void)
 			for(size_t i=0;i<BLOCK_SIZE;i++) {
 				free(xvecArray[i]);
 				free(rvecArray[i]);
-				free(rvecArray_new[i]);
+				free(rMult[i]);
 				free(pvecArray[i]);
-				free(pvecArray_new[i]);
+				free(pMult[i]);
 				free(ro_Matx[i]);
 				free(ro_new_Matx[i]);
 				free(po_Matx[i]);
@@ -969,12 +973,13 @@ void FreeEverything(void)
 				free(pvec_koeff[i]);
 				free(EincArray[i]);
 				free(AvecbufferArray[i]);
+				free(a_matrix[i]);
 			}
 			free(xvecArray);
 			free(rvecArray);
-			free(rvecArray_new);
+			free(rMult);
 			free(pvecArray);
-			free(pvecArray_new);
+			free(pMult);
 			free(ro_Matx);
 			free(ro_new_Matx);
 			free(po_Matx);
@@ -987,6 +992,8 @@ void FreeEverything(void)
 			free(inv_auxiliary);
 			free(mutrix_mult_B_auxiliary);
 			free(mutrix_mult_C_auxiliary);
+			free(a_matrix);
+			free(tau);
 			break;
 	}
 	/* TO ADD NEW ITERATIVE SOLVER

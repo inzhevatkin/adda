@@ -131,7 +131,7 @@ void equate_matrices(doublecomplex ** a, doublecomplex ** b) {
 	}
 }
 
-void inv(doublecomplex ** ro){
+void inv(doublecomplex ** ro, FILE * log, FILE * norm_log){
 	size_t i, j, idx;
 	size_t N=BLOCK_SIZE;
     for (i = 0; i != N; ++i) { //row
@@ -140,9 +140,34 @@ void inv(doublecomplex ** ro){
             inv_auxiliary[idx] = ro[j][i]; //(MAT[i][j]).real() + _Complex_I*(MAT[i][j]).imag();
         }
     }
+    // Condition number.
+	// see:
+	// https://www.netlib.org/lapack/explore-html/dd/d9a/group__double_g_ecomputational_ga188b8d30443d14b1a3f7f8331d87ae60.html
+	// lapack_int LAPACKE_zgecon( int matrix_layout, char norm, lapack_int n, const lapack_complex_double* a,
+	//								lapack_int lda, double anorm, double* rcond );
+	double rcond;
+	LAPACKE_zgecon(LAPACK_ROW_MAJOR, '1', N, inv_auxiliary, N, '1', &rcond);
+	fprintf(log,"%27.25f \n", rcond);
+
+
+	// Norm.
+	// see:
+	// https://www.netlib.org/lapack/explore-html/de/d39/group__double_g_eauxiliary_gaefa80dbd8cd1732740478618b8b622a1.html
+	// double LAPACKE_zlange( int matrix_layout, char norm, lapack_int m,
+	//                           lapack_int n, const lapack_complex_double* a,
+	//                           lapack_int lda );
+	double norm;
+	norm = LAPACKE_zlange(LAPACK_ROW_MAJOR, '1', N, N, inv_auxiliary, N);
+	fprintf(norm_log,"%27.25f \n", norm);
+	fprintf(logfile,"Norm=%f \n", norm);
+
     int* IPIV = malloc(N*sizeof(int));
-    //LU factorization
-    LAPACKE_zgetrf(LAPACK_ROW_MAJOR, N, N, inv_auxiliary, N, IPIV);
+    // lapack_int LAPACKE_zgetrf( int matrix_layout, lapack_int m, lapack_int n, lapack_complex_double* a,
+    // lapack_int lda, lapack_int* ipiv )
+    // matrix_layout - LAPACK_ROW_MAJOR/LAPACK_COL_MAJOR
+    // lda - the size of the part of the matrix that we want to invert
+    // IPIV - list of instructions of what rows to swap in order to invert the matrix
+    LAPACKE_zgetrf(LAPACK_ROW_MAJOR, N, N, inv_auxiliary, N, IPIV); // LU factorization
     LAPACKE_zgetri(LAPACK_ROW_MAJOR, N, inv_auxiliary, N, IPIV);
     for (i = 0; i != N; ++i){ //row
         for (j = 0; j != N; ++j){ //column
@@ -187,11 +212,24 @@ void sq_matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b
 }
 
 void matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t rows, size_t columns){
+	// It is impossible to use here already implemented functions of vector products,
+	// since these functions imply multiplication of vectors of size local_nRows.
 	doublecomplex sum;
 	for (size_t j=0;j<rows;j++) { //row of first matrix
 		for (size_t k=0;k<columns;k++) { //column of second matrix
 			sum=0;
 			for (size_t i=0;i<columns;i++) sum+=a[i][j]*b[k][i];
+			res[k][j]=sum;
+		}
+	}
+}
+
+void matrix_mult_sq(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t size){
+	doublecomplex sum;
+	for (size_t j=0;j<size;j++) { //row of first matrix
+		for (size_t k=0;k<size;k++) { //column of second matrix
+			sum=0;
+			for (size_t i=0;i<size;i++) sum+=a[i][j]*b[k][i];
 			res[k][j]=sum;
 		}
 	}
@@ -210,14 +248,25 @@ void mTm(doublecomplex ** res, doublecomplex ** a) {
 	}
 }
 
-void mTAm(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b){
+void mTAm(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b)
+// res - BLOCK_SIZE*BLOCK_SIZE matrix
+{
 	doublecomplex sum;
-
 	for (size_t j=0;j<BLOCK_SIZE;j++) { // column of a
 		for (size_t k=0;k<BLOCK_SIZE;k++) { // column of b
 			sum=0;
 			for (size_t i=0;i<local_nRows;i++) sum+=a[j][i]*b[k][i];
 			res[k][j]=sum;
+		}
+	}
+}
+
+void aTb(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, TIME_TYPE *comm_timing)
+// res - BLOCK_SIZE*BLOCK_SIZE matrix
+{
+	for (size_t j=0;j<BLOCK_SIZE;j++) { // column of a
+		for (size_t k=0;k<BLOCK_SIZE;k++) { // column of b
+			res[k][j]=nDotProd_conj(a[j],b[k],comm_timing);
 		}
 	}
 }
@@ -245,6 +294,17 @@ void R_new(doublecomplex ** res, doublecomplex ** r_old, doublecomplex ** Ap, do
 	}
 }
 
+void vector_new(doublecomplex ** res, doublecomplex ** a_old, doublecomplex ** b_old, doublecomplex ** koeff, int sign)
+// a_new=a_old+sign*b_old*koeff
+{
+	matrix_mult(pvec_koeff, b_old, koeff, local_nRows, BLOCK_SIZE);
+	for (size_t j=0;j<BLOCK_SIZE;j++) { //column
+		for (size_t k=0;k<local_nRows;k++) { //row
+			res[j][k]=a_old[j][k]+sign*pvec_koeff[j][k];
+		}
+	}
+}
+
 void P_new(doublecomplex ** res, doublecomplex ** r_new, doublecomplex ** p_old, doublecomplex ** beta)
 // p_new=r_new+p_old*beta
 {
@@ -263,7 +323,7 @@ double find_max(void) {
 	for(size_t i=0;i<BLOCK_SIZE;i++){
 		sum_cur=0;
 		for(size_t j=0;j<local_nRows;j++){
-			sum_cur += cAbs2(rvecArray_new[i][j]);
+			sum_cur += cAbs2(rvecArray[i][j]);
 		}
 		if(sum_max<sum_cur) sum_max=sum_cur;
 	}

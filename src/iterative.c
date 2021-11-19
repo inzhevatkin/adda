@@ -744,10 +744,46 @@ ITER_FUNC(BiCGStab)
 #undef EPS2
 
 //======================================================================================================================
+// the function works with square matrices
+void output(const char * name, doublecomplex ** Array)
+{
+	fprintf(logfile,"%s: ", name);
+	for(size_t j=0;j<BLOCK_SIZE;j++){
+		fprintf(logfile,"\n");
+		for(size_t i=0;i<BLOCK_SIZE;i++){
+			fprintf(logfile,"%f ", (double)Array[i][j]);
+		}
+	}
+	fprintf(logfile,"\n");
+}
+
+// QR decomposition
+void qr(doublecomplex ** a, const size_t size)
+{
+	const size_t rank = size;
+	equate_matrices(a_matrix, a);
+
+	// See for details:
+	// https://www.netlib.org/lapack/explore-html/dd/d9a/group__double_g_ecomputational_ga3766ea903391b5cf9008132f7440ec7b.html
+	// lapack_int LAPACKE_zgeqrf( int matrix_layout, lapack_int m, lapack_int n,
+	//                            lapack_complex_double* a, lapack_int lda,
+	//                            lapack_complex_double* tau );
+	// Calculate QR factorizations
+	LAPACKE_zgeqrf(LAPACK_ROW_MAJOR, (int) local_nRows, (int) BLOCK_SIZE, a_matrix, (int) local_nRows, tau);
+
+
+	// lapack_int LAPACKE_dorgqr( int matrix_layout, lapack_int m, lapack_int n,
+	//                            lapack_int k, double* a, lapack_int lda,
+	//                            const double* tau );
+	// Create orthogonal matrix Q (in tmpA)
+	LAPACKE_dorgqr(LAPACK_ROW_MAJOR, (int) local_nRows, (int) rank, (int) rank, a_matrix, (int) rank, tau);
+}
+
 
 ITER_FUNC(BiCGBlock)
-/* Bi-Conjugate Gradient for Complex Symmetric systems, based on:
- * O'Leary (1980).
+/* Block conjugate gradient for complex symmetric systems, based on:
+ * D.P. O'Leary "The Block Conjugate Gradient Algorithm and Related Methods" (1980).
+ * R.W. Freund "Conjugate gradient-type methods for linear systems with complex symmetric coefficient matrices" (1992).
  */
 {
 #define EPS1 1E-10 // for (rT.r)/(r.r)
@@ -766,36 +802,44 @@ ITER_FUNC(BiCGBlock)
 			if (niter==1) {
 				equate_matrices(pvecArray, rvecArray);
 			}
+			else {
+				// output of multiplication pTp, rTr
+				aTb(pMult, pvecArray, pvecArray, &Timing_OneIterComm); // s*s
+				output("pMult", pMult);
+				aTb(rMult, rvecArray, rvecArray, &Timing_OneIterComm); // s*s
+				output("rMult", rMult);
+			}
 			// alfa=(pT.A.p)^-1.(rT.r)
 			// s=BLOCK_SIZE
 			for(size_t j=0;j<BLOCK_SIZE;j++){
-				MatVec_wrapper(pvecArray[j],AvecbufferArray[j],NULL,false,&Timing_OneIterMVP,&Timing_OneIterMVPComm);
+				MatVec_wrapper(pvecArray[j],AvecbufferArray[j],NULL,false,&Timing_OneIterMVP,&Timing_OneIterMVPComm); // должно быть A.p, так ли?
 			}
-			mTAm(po_Matx, pvecArray, AvecbufferArray); // s*s
+			aTb(po_Matx, pvecArray, AvecbufferArray, &Timing_OneIterComm); // AvecbufferArray=A.p
+			//output("po_Matx", po_Matx);
+
 			// use one array for po, po^-1
-			inv(po_Matx);// s*s
-			mTm(ro_Matx, rvecArray); // s*s
-			sq_matrix_mult(alfa_Matx, po_Matx, ro_Matx); //s*s
+			inv(po_Matx, log_poMatx, poMatx_norm);// s*s
+			aTb(ro_Matx, rvecArray, rvecArray, &Timing_OneIterComm); // s*s
+			//output("ro_Matx", ro_Matx);
+			matrix_mult(alfa_Matx, po_Matx, ro_Matx, BLOCK_SIZE, BLOCK_SIZE);
 
 			// x_new=x_old + p_old*alfa
 			// use one array for x_old, x_new.
-			X_new(xvecArray, pvecArray, alfa_Matx);
+			vector_new(xvecArray, xvecArray, pvecArray, alfa_Matx, 1);
+			// output new xvecArray
+			//fprintf(logfile,"local_nRows=%d \n", (int)local_nRows);
+			//fprintf(logfile,"BLOCK_SIZE=%d \n", (int)BLOCK_SIZE);
 
 			//r_new=r_old - A*p_old*alfa
-			R_new(rvecArray_new, rvecArray, AvecbufferArray, alfa_Matx);
+			vector_new(rvecArray, rvecArray, AvecbufferArray, alfa_Matx, -1);
 
 			// ro_old_Matx^-1
 			// use one array for ro, ro^-1
-			inv(ro_Matx);
-			// ro_new_Matx
-			mTm(ro_new_Matx, rvecArray_new); // s*s
-			// beta_Matx=ro_old_Matx^-1.ro_new_Matx
-			sq_matrix_mult(beta_Matx, ro_Matx, ro_new_Matx);
-			// p_new=r_new + p_old*beta
-			P_new(pvecArray_new, rvecArray_new, pvecArray, beta_Matx);
-
-			equate_matrices(rvecArray, rvecArray_new);
-			equate_matrices(pvecArray, pvecArray_new);
+			inv(ro_Matx, log_roMatx, roMatx_norm);
+			aTb(ro_new_Matx, rvecArray, rvecArray, &Timing_OneIterComm); // s*s
+			// beta_Matx=ro_old_Matx^(-1).ro_new_Matx
+			matrix_mult(beta_Matx, ro_Matx, ro_new_Matx, BLOCK_SIZE, BLOCK_SIZE);
+			vector_new(pvecArray, rvecArray, pvecArray, beta_Matx, 1);
 
 			// find the maximum |r_k+1|^2:
 			inprodRp1=find_max();
@@ -1455,6 +1499,7 @@ static const char *CalcInitField(double zero_resid,const enum incpol which)
 				return "x_0 = E_inc";
 			}
 		case IF_ZERO:
+			// So far made support IT_BICG_BLOCK only for this case
 			if (IterMethod==IT_BICG_BLOCK) {
 				for(size_t i=0;i<BLOCK_SIZE;i++) {
 					nInit(xvecArray[i]); // x_0=0
@@ -1633,6 +1678,14 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 	/* x is a solution of a modified system, not exactly internal field; should not be used further except for adaptive
 	 * technique (as starting vector for next system)
 	 */
+	if (IterMethod==IT_BICG_BLOCK) {
+		nCopy(pvec, pvecArray[0]);
+		nCopy(xvec, xvecArray[0]);
+		nCopy(Einc, EincArray[0]);
+		prop[0]=0;
+		prop[1]=0;
+		prop[2]=1;
+	}
 	nMult_mat(pvec,xvec,cc_sqrt); // p now contains polarizations. Can be used to calculate e.g. scattered field faster.
 	if (chp_exit) return CHP_EXIT; // check if exiting after checkpoint
 	return (niter-1); // the number of iterations elapsed

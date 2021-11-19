@@ -76,7 +76,7 @@ FILE * restrict logfile;         // file where all the information about the run
 int term_width;                  // width of the terminal to which ADDA produces output
 
 // refractive index
-int Nmat;  // number of different domains (for each either scalar or tensor refractive index is specified
+int Nmat;  // number of different domains (for each either scalar or tensor refractive index is specified)
 int Ncomp; // number of components of each refractive index (1 or 3)
 doublecomplex ref_index[MAX_NMAT];  // a set of refractive indexes
 doublecomplex cc_sqrt[MAX_NMAT][3]; // sqrt of couple constants
