@@ -70,7 +70,7 @@ void nMult_mat(doublecomplex * restrict a,const doublecomplex * restrict b,doubl
 void nMultSelf_mat(doublecomplex * restrict a,doublecomplex (* restrict c)[3]);
 void nConj(doublecomplex * restrict a);
 
-void inv(doublecomplex ** ro, FILE * log, FILE * norm_log);
+void inv(doublecomplex ** ro);
 void matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t rows, size_t columns);
 void matrix_mult_sq(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t size);
 void equate_matrices(doublecomplex ** a, doublecomplex ** b);

@@ -812,30 +812,26 @@ ITER_FUNC(BiCGBlock)
 			// alfa=(pT.A.p)^-1.(rT.r)
 			// s=BLOCK_SIZE
 			for(size_t j=0;j<BLOCK_SIZE;j++){
-				MatVec_wrapper(pvecArray[j],AvecbufferArray[j],NULL,false,&Timing_OneIterMVP,&Timing_OneIterMVPComm); // должно быть A.p, так ли?
+				MatVec_wrapper(pvecArray[j],AvecbufferArray[j],NULL,false,&Timing_OneIterMVP,&Timing_OneIterMVPComm);
 			}
 			aTb(po_Matx, pvecArray, AvecbufferArray, &Timing_OneIterComm); // AvecbufferArray=A.p
 			//output("po_Matx", po_Matx);
 
 			// use one array for po, po^-1
-			inv(po_Matx, log_poMatx, poMatx_norm);// s*s
+			inv(po_Matx);// s*s
 			aTb(ro_Matx, rvecArray, rvecArray, &Timing_OneIterComm); // s*s
-			//output("ro_Matx", ro_Matx);
 			matrix_mult(alfa_Matx, po_Matx, ro_Matx, BLOCK_SIZE, BLOCK_SIZE);
 
 			// x_new=x_old + p_old*alfa
 			// use one array for x_old, x_new.
 			vector_new(xvecArray, xvecArray, pvecArray, alfa_Matx, 1);
-			// output new xvecArray
-			//fprintf(logfile,"local_nRows=%d \n", (int)local_nRows);
-			//fprintf(logfile,"BLOCK_SIZE=%d \n", (int)BLOCK_SIZE);
 
 			//r_new=r_old - A*p_old*alfa
 			vector_new(rvecArray, rvecArray, AvecbufferArray, alfa_Matx, -1);
 
 			// ro_old_Matx^-1
 			// use one array for ro, ro^-1
-			inv(ro_Matx, log_roMatx, roMatx_norm);
+			inv(ro_Matx);
 			aTb(ro_new_Matx, rvecArray, rvecArray, &Timing_OneIterComm); // s*s
 			// beta_Matx=ro_old_Matx^(-1).ro_new_Matx
 			matrix_mult(beta_Matx, ro_Matx, ro_new_Matx, BLOCK_SIZE, BLOCK_SIZE);

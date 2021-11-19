@@ -131,7 +131,7 @@ void equate_matrices(doublecomplex ** a, doublecomplex ** b) {
 	}
 }
 
-void inv(doublecomplex ** ro, FILE * log, FILE * norm_log){
+void inv(doublecomplex ** ro){
 	size_t i, j, idx;
 	size_t N=BLOCK_SIZE;
     for (i = 0; i != N; ++i) { //row
@@ -158,7 +158,6 @@ void inv(doublecomplex ** ro, FILE * log, FILE * norm_log){
 	//                           lapack_int lda );
 	double norm;
 	norm = LAPACKE_zlange(LAPACK_ROW_MAJOR, '1', N, N, inv_auxiliary, N);
-	fprintf(norm_log,"%27.25f \n", norm);
 	fprintf(logfile,"Norm=%f \n", norm);
 
     int* IPIV = malloc(N*sizeof(int));
