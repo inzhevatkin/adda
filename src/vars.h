@@ -135,10 +135,6 @@ doublecomplex *inv_auxiliary;
 doublecomplex *mutrix_mult_B_auxiliary;
 doublecomplex *mutrix_mult_C_auxiliary;
 
-FILE * log_poMatx;
-FILE * log_roMatx;
-FILE * poMatx_norm;
-FILE * roMatx_norm;
 
 doublecomplex *tau; // QR decomposition
 doublecomplex ** a_matrix;
