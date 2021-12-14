@@ -23,6 +23,8 @@
 #include <stdio.h>
 #include <C:\Users\konstantin\Documents\Compiled-lapack-3.10.0\include\lapacke.h>
 #include <C:\Users\konstantin\Documents\Compiled-lapack-3.10.0\include\cblas.h>
+//#include <lapacke.h>
+//#include <cblas.h>
 
 void nInit(doublecomplex * restrict a);
 void nCopy(doublecomplex * restrict a,const doublecomplex * restrict b);
