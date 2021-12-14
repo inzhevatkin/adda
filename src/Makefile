@@ -177,8 +177,8 @@ override EXTRA_FLAGS +=
 #FFTW3_LIB_PATH := $(HOME)/lib
 FFTW3_INC_PATH := "$(abspath ./../../../fftw-3.3.5-dll64)"
 FFTW3_LIB_PATH := "$(abspath ./../../../fftw-3.3.5-dll64)"
-LAPACK_INC_PATH := "$(abspath ./../../../Compiled-lapack/include)"
-LAPACK_LIB_PATH := "$(abspath ./../../../Compiled-lapack/lib)"
+LAPACK_INC_PATH := "$(abspath ./../../../Compiled-lapack-3.10.0/include)"
+LAPACK_LIB_PATH := "$(abspath ./../../../Compiled-lapack-3.10.0/lib)"
 
 # --Fortran library path--
 # If your environment does not specify search path for Fortran libraries, you may get errors during linking of ADDA.

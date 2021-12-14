@@ -757,29 +757,6 @@ void output(const char * name, doublecomplex ** Array)
 	fprintf(logfile,"\n");
 }
 
-// QR decomposition
-void qr(doublecomplex ** a, const size_t size)
-{
-	const size_t rank = size;
-	equate_matrices(a_matrix, a);
-
-	// See for details:
-	// https://www.netlib.org/lapack/explore-html/dd/d9a/group__double_g_ecomputational_ga3766ea903391b5cf9008132f7440ec7b.html
-	// lapack_int LAPACKE_zgeqrf( int matrix_layout, lapack_int m, lapack_int n,
-	//                            lapack_complex_double* a, lapack_int lda,
-	//                            lapack_complex_double* tau );
-	// Calculate QR factorizations
-	LAPACKE_zgeqrf(LAPACK_ROW_MAJOR, (int) local_nRows, (int) BLOCK_SIZE, a_matrix, (int) local_nRows, tau);
-
-
-	// lapack_int LAPACKE_dorgqr( int matrix_layout, lapack_int m, lapack_int n,
-	//                            lapack_int k, double* a, lapack_int lda,
-	//                            const double* tau );
-	// Create orthogonal matrix Q (in tmpA)
-	LAPACKE_dorgqr(LAPACK_ROW_MAJOR, (int) local_nRows, (int) rank, (int) rank, a_matrix, (int) rank, tau);
-}
-
-
 ITER_FUNC(BiCGBlock)
 /* Block conjugate gradient for complex symmetric systems, based on:
  * D.P. O'Leary "The Block Conjugate Gradient Algorithm and Related Methods" (1980).
@@ -800,14 +777,163 @@ ITER_FUNC(BiCGBlock)
 		case PHASE_ITER:
 			Dz("Current iteration: "GFORM_DEBUG,(double)niter);
 			if (niter==1) {
+				/*FILE *file;
+				file = fopen("B_ADDA(before_QR)2.txt", "w");
+				//fprintf(file, "{");
+				for(size_t j=0;j<local_nRows;j++) {
+					//fprintf(file, "{");
+					for(size_t i=0;i<BLOCK_SIZE;i++) {
+						fprintf(file,"%.10f+%.10fj", creal(rvecArray[i][j]), cimag(rvecArray[i][j]));
+						if(i != BLOCK_SIZE-1) {
+							fprintf(file, ", ");
+						}
+					}
+					if(j != local_nRows-1) {
+						fprintf(file, ",\n");//fprintf(file, "},\n");
+					}
+					else {
+						//fprintf(file, "}}");
+					}
+				}
+				fclose(file);*/
+				//QR-factorization
+				//QR(rvecArray, R, local_nRows, BLOCK_SIZE);
 				equate_matrices(pvecArray, rvecArray);
+				// save this
+				/*FILE *file2;
+				file2 = fopen("B_ADDA(after_QR).txt", "w");
+				//fprintf(file, "{");
+				for(size_t j=0;j<local_nRows;j++) {
+					//fprintf(file, "{");
+					for(size_t i=0;i<BLOCK_SIZE;i++) {
+						fprintf(file2,"%.10f+%.10fj", creal(rvecArray[i][j]), cimag(rvecArray[i][j]));
+						if(i != BLOCK_SIZE-1) {
+							fprintf(file2, ", ");
+						}
+					}
+					if(j != local_nRows-1) {
+						fprintf(file2, ",\n");//fprintf(file, "},\n");
+					}
+					else {
+						//fprintf(file, "}}");
+					}
+				}
+				fclose(file2);*/
+				//test-----------------------------------------------------//
+				size_t cols=5;
+				size_t rows=5;
+				doublecomplex ** ex=(doublecomplex **)malloc(cols*sizeof(doublecomplex *));
+				doublecomplex ** R_test=(doublecomplex **)malloc(cols*sizeof(doublecomplex *));
+				for(size_t i=0;i<cols;i++) {
+					ex[i]=malloc(rows*sizeof(doublecomplex));
+					R_test[i]=malloc(cols*sizeof(doublecomplex));
+				}
+
+				double real=1;
+				double im=3;
+				for(size_t i=0; i<cols; i++) {
+					for(size_t j=0; j<rows; j++) {
+						ex[i][j] = real + im*I;
+						real+=1;
+						im+=1;
+					}
+				}
+				/*
+				ex[0][0] = -1.800000 - 0.900000*I;
+				ex[0][1] = -1.600000 + 1.000000*I;
+				ex[0][2] = -1.000000 - 0.300000*I;
+				ex[0][3] = 1.100000 - 0.100000*I;
+				ex[0][4] = 0.500000 + 0.700000*I;
+				ex[0][5] = -1.500000 - 0.700000*I;
+
+				ex[1][0] = 1.100000 - 0.800000*I;
+				ex[1][1] = 1.700000 + 1.400000*I;
+				ex[1][2] = 1.200000 + 0.300000*I;
+				ex[1][3] = 0.700000 - 1.900000*I;
+				ex[1][4] = -0.200000 - 1.500000*I;
+				ex[1][5] = 1.800000 - 0.600000*I;
+				*/
+				// save this
+				FILE *file5;
+				file5 = fopen("./Test/B(test).txt", "w");
+				//fprintf(file, "{");
+				for(size_t j=0;j<rows;j++) {
+					//fprintf(file, "{");
+					for(size_t i=0;i<cols;i++) {
+						fprintf(file5,"%.10f + %.10fj", creal(ex[i][j]), cimag(ex[i][j]));
+						if(i != cols-1) {
+							fprintf(file5, ", ");
+						}
+					}
+					if(j != rows-1) {
+						fprintf(file5, ",\n");//fprintf(file, "},\n");
+					}
+					else {
+						//fprintf(file, "}}");
+					}
+				}
+				fclose(file5);
+
+				QR(ex, R_test, rows, cols);
+
+				// save this
+				FILE *file3;
+				file3 = fopen("./Test/Q(test).txt", "w");
+				//fprintf(file, "{");
+				for(size_t j=0;j<rows;j++) {
+					//fprintf(file, "{");
+					for(size_t i=0;i<cols;i++) {
+						fprintf(file3,"%.10f + %.10fj", creal(ex[i][j]), cimag(ex[i][j]));
+						if(i != cols-1) {
+							fprintf(file3, ", ");
+						}
+					}
+					if(j != rows-1) {
+						fprintf(file3, ",\n");//fprintf(file, "},\n");
+					}
+					else {
+						//fprintf(file, "}}");
+					}
+				}
+				fclose(file3);
+
+				// save this
+				FILE *file4;
+				file4 = fopen("./Test/R(test).txt", "w");
+				//fprintf(file4, "{");
+				for(size_t j=0;j<cols;j++) {
+					//fprintf(file2, "{");
+					for(size_t i=0;i<cols;i++) {
+						fprintf(file4,"%.10f + %.10fj", creal(R_test[i][j]), cimag(R_test[i][j]));
+						if(i != cols-1) {
+							fprintf(file4, ", ");
+						}
+					}
+					if(j != cols-1) {
+						fprintf(file4, ",\n");
+						//fprintf(file2, "},\n");
+					}
+					else {
+						//fprintf(file2, "}}");
+					}
+				}
+				fclose(file4);
+
+				//free
+				for(size_t i=0;i<cols;i++) {
+					free(ex[i]);
+					free(R_test[i]);
+				}
+				free(ex);
+				free(R_test);
+				//--------------------------------------------------------//
 			}
 			else {
 				// output of multiplication pTp, rTr
 				aTb(pMult, pvecArray, pvecArray, &Timing_OneIterComm); // s*s
-				output("pMult", pMult);
+				//output("pMult", pMult);
 				aTb(rMult, rvecArray, rvecArray, &Timing_OneIterComm); // s*s
-				output("rMult", rMult);
+				//output("rMult", rMult);
 			}
 			// alfa=(pT.A.p)^-1.(rT.r)
 			// s=BLOCK_SIZE
@@ -821,13 +947,17 @@ ITER_FUNC(BiCGBlock)
 			inv(po_Matx);// s*s
 			aTb(ro_Matx, rvecArray, rvecArray, &Timing_OneIterComm); // s*s
 			matrix_mult(alfa_Matx, po_Matx, ro_Matx, BLOCK_SIZE, BLOCK_SIZE);
+			fprintf(logfile,"alfa = %f + %f*I\n", creal(alfa_Matx[0][0]), cimag(alfa_Matx[0][0]));
+			//output("alfa_Matx", alfa_Matx);
 
 			// x_new=x_old + p_old*alfa
 			// use one array for x_old, x_new.
 			vector_new(xvecArray, xvecArray, pvecArray, alfa_Matx, 1);
+			//output("xvecArray", xvecArray);
 
 			//r_new=r_old - A*p_old*alfa
 			vector_new(rvecArray, rvecArray, AvecbufferArray, alfa_Matx, -1);
+			//output("rvecArray", rvecArray);
 
 			// ro_old_Matx^-1
 			// use one array for ro, ro^-1
@@ -835,7 +965,10 @@ ITER_FUNC(BiCGBlock)
 			aTb(ro_new_Matx, rvecArray, rvecArray, &Timing_OneIterComm); // s*s
 			// beta_Matx=ro_old_Matx^(-1).ro_new_Matx
 			matrix_mult(beta_Matx, ro_Matx, ro_new_Matx, BLOCK_SIZE, BLOCK_SIZE);
+			fprintf(logfile,"beta = %f + %f*I\n", creal(beta_Matx[0][0]), cimag(beta_Matx[0][0]));
+			//output("beta_Matx", beta_Matx);
 			vector_new(pvecArray, rvecArray, pvecArray, beta_Matx, 1);
+			//output("pvecArray", pvecArray);
 
 			// find the maximum |r_k+1|^2:
 			inprodRp1=find_max();
@@ -1539,7 +1672,7 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
  * 'which' is used only if the initial field is read from file
  */
 {
-	double temp;
+	double temp=0, loc_temp;
 	char tmp_str[MAX_LINE];
 	TIME_TYPE tstart,time_tmp,time_tmp2,time_tmp3;
 
@@ -1561,8 +1694,36 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 		if (IterMethod==IT_BICG_BLOCK) {
 			for(size_t i=0;i<BLOCK_SIZE;i++) {
 				nMult_mat(pvecArray[i],EincArray[i],cc_sqrt);
+				//loc_temp=nNorm2(pvecArray[i],&Timing_InitIterComm); // |r_0|^2 when x_0=0
+				//fprintf(logfile,"norm = %.10f,\n", loc_temp);
+				//if (loc_temp > temp) {
+				//	temp = loc_temp;
+				//}
+				// for QR-decomposition norm = 1:
+				temp=1;
 			}
-			temp=nNorm2(pvecArray[0],&Timing_InitIterComm); // |r_0|^2 when x_0=0
+			fprintf(logfile,"max norm = %.10f,\n", temp);
+			// I add this code for test.
+			// I want to output the right side b, which is used in the system of linear equations.
+			FILE *file;
+			file = fopen("B_ADDA(before_QR).txt", "w");
+			//fprintf(file, "{");
+			for(size_t j=0;j<local_nRows;j++) {
+				//fprintf(file, "{");
+				for(size_t i=0;i<BLOCK_SIZE;i++) {
+					fprintf(file,"%.10f+%.10fj", creal(pvecArray[i][j]), cimag(pvecArray[i][j]));
+					if(i != BLOCK_SIZE-1) {
+						fprintf(file, ", ");
+					}
+				}
+				if(j != local_nRows-1) {
+					fprintf(file, ",\n");//fprintf(file, "},\n");
+				}
+				else {
+					//fprintf(file, "}}");
+				}
+			}
+			fclose(file);
 		}
 		else {
 			nMult_mat(pvec,Einc,cc_sqrt);

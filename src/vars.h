@@ -112,7 +112,7 @@ extern int * restrict position_full;
 
 #endif // __vars_h
 
-#define BLOCK_SIZE 10
+#define BLOCK_SIZE 100
 // the first index of the arrays is a column, the second is a row
 doublecomplex **xvecArray; // n*s
 doublecomplex **rvecArray; // n*s
@@ -134,7 +134,7 @@ doublecomplex **AvecbufferArray; // used to hold the result of matrix-vector pro
 doublecomplex *inv_auxiliary;
 doublecomplex *mutrix_mult_B_auxiliary;
 doublecomplex *mutrix_mult_C_auxiliary;
+doublecomplex **R; // s*s
 
 
-doublecomplex *tau; // QR decomposition
 doublecomplex ** a_matrix;

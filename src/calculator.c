@@ -748,45 +748,46 @@ static void AllocateEverything(void)
 			memory+=2*tmp;
 			break;
 		case IT_BICG_BLOCK:
-			EincArray=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
-			rvecArray=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
-			rMult=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
-			pvecArray=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
-			pMult=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
-			xvecArray=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
-			AvecbufferArray=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
-			pvec_koeff=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+			EincArray=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
+			rvecArray=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
+			rMult=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
+			pvecArray=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
+			pMult=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
+			xvecArray=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
+			AvecbufferArray=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
+			pvec_koeff=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
 
-			ro_Matx=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
-			ro_new_Matx=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
-			po_Matx=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
-			po_new_Matx=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
-			beta_Matx=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
-			alfa_Matx=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
-			inv_auxiliary=(complex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(complex));
-			mutrix_mult_B_auxiliary=(complex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(complex));
-			mutrix_mult_C_auxiliary=(complex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(complex));
-
-			tau=(complex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(complex));
-			a_matrix=(complex **)malloc(BLOCK_SIZE*sizeof(complex *));
+			ro_Matx=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
+			ro_new_Matx=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
+			po_Matx=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
+			po_new_Matx=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
+			beta_Matx=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
+			alfa_Matx=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
+			inv_auxiliary=(doublecomplex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(doublecomplex));
+			mutrix_mult_B_auxiliary=(doublecomplex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(doublecomplex));
+			mutrix_mult_C_auxiliary=(doublecomplex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(doublecomplex));
+			R=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex));
+			a_matrix=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
 
 			for(size_t i=0;i<BLOCK_SIZE;i++) {
-				EincArray[i]=malloc(local_nRows*sizeof(complex));
-				rvecArray[i]=malloc(local_nRows*sizeof(complex));
-				rMult[i]=malloc(local_nRows*sizeof(complex));
-				pvecArray[i]=malloc(local_nRows*sizeof(complex));
-				pMult[i]=malloc(local_nRows*sizeof(complex));
-				xvecArray[i]=malloc(local_nRows*sizeof(complex));
-				AvecbufferArray[i]=malloc(local_nRows*sizeof(complex));
-				pvec_koeff[i]=malloc(local_nRows*sizeof(complex));
-				a_matrix[i]=malloc(local_nRows*sizeof(complex));
+				EincArray[i]=malloc(local_nRows*sizeof(doublecomplex));
+				rvecArray[i]=malloc(local_nRows*sizeof(doublecomplex));
+				rMult[i]=malloc(local_nRows*sizeof(doublecomplex));
+				pvecArray[i]=malloc(local_nRows*sizeof(doublecomplex));
+				pMult[i]=malloc(local_nRows*sizeof(doublecomplex));
+				xvecArray[i]=malloc(local_nRows*sizeof(doublecomplex));
+				AvecbufferArray[i]=malloc(local_nRows*sizeof(doublecomplex));
+				pvec_koeff[i]=malloc(local_nRows*sizeof(doublecomplex));
+				a_matrix[i]=malloc(local_nRows*sizeof(doublecomplex));
 
-				ro_Matx[i]=malloc(BLOCK_SIZE*sizeof(complex));
-				ro_new_Matx[i]=malloc(BLOCK_SIZE*sizeof(complex));
-				po_Matx[i]=malloc(BLOCK_SIZE*sizeof(complex));
-				po_new_Matx[i]=malloc(BLOCK_SIZE*sizeof(complex));
-				beta_Matx[i]=malloc(BLOCK_SIZE*sizeof(complex));
-				alfa_Matx[i]=malloc(BLOCK_SIZE*sizeof(complex));
+				ro_Matx[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
+				ro_new_Matx[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
+				po_Matx[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
+				po_new_Matx[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
+				beta_Matx[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
+				alfa_Matx[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
+
+				R[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
 			}
 			break;
 	}
@@ -974,6 +975,7 @@ void FreeEverything(void)
 				free(EincArray[i]);
 				free(AvecbufferArray[i]);
 				free(a_matrix[i]);
+				free(R[i]);
 			}
 			free(xvecArray);
 			free(rvecArray);
@@ -993,7 +995,7 @@ void FreeEverything(void)
 			free(mutrix_mult_B_auxiliary);
 			free(mutrix_mult_C_auxiliary);
 			free(a_matrix);
-			free(tau);
+			free(R);
 			break;
 	}
 	/* TO ADD NEW ITERATIVE SOLVER

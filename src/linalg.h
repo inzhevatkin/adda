@@ -21,8 +21,8 @@
 #include "timing.h"   // for TIME_TYPE
 #include "types.h"    // for doublecomplex
 #include <stdio.h>
-#include <C:\Users\konstantin\Documents\Compiled-lapack\include\lapacke.h>
-#include <C:\Users\konstantin\Documents\Compiled-lapack\include\cblas.h>
+#include <C:\Users\konstantin\Documents\Compiled-lapack-3.10.0\include\lapacke.h>
+#include <C:\Users\konstantin\Documents\Compiled-lapack-3.10.0\include\cblas.h>
 
 void nInit(doublecomplex * restrict a);
 void nCopy(doublecomplex * restrict a,const doublecomplex * restrict b);
@@ -71,6 +71,7 @@ void nMultSelf_mat(doublecomplex * restrict a,doublecomplex (* restrict c)[3]);
 void nConj(doublecomplex * restrict a);
 
 void inv(doublecomplex ** ro);
+void QR(doublecomplex ** b, doublecomplex ** R, size_t rows, size_t columns);
 void matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t rows, size_t columns);
 void matrix_mult_sq(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t size);
 void equate_matrices(doublecomplex ** a, doublecomplex ** b);

@@ -145,9 +145,9 @@ void inv(doublecomplex ** ro){
 	// https://www.netlib.org/lapack/explore-html/dd/d9a/group__double_g_ecomputational_ga188b8d30443d14b1a3f7f8331d87ae60.html
 	// lapack_int LAPACKE_zgecon( int matrix_layout, char norm, lapack_int n, const lapack_complex_double* a,
 	//								lapack_int lda, double anorm, double* rcond );
-	double rcond;
-	LAPACKE_zgecon(LAPACK_ROW_MAJOR, '1', N, inv_auxiliary, N, '1', &rcond);
-	fprintf(log,"%27.25f \n", rcond);
+	//double rcond;
+	//LAPACKE_zgecon(LAPACK_ROW_MAJOR, '1', N, inv_auxiliary, N, '1', &rcond);
+	//fprintf(log,"%27.25f \n", rcond);
 
 
 	// Norm.
@@ -156,9 +156,9 @@ void inv(doublecomplex ** ro){
 	// double LAPACKE_zlange( int matrix_layout, char norm, lapack_int m,
 	//                           lapack_int n, const lapack_complex_double* a,
 	//                           lapack_int lda );
-	double norm;
-	norm = LAPACKE_zlange(LAPACK_ROW_MAJOR, '1', N, N, inv_auxiliary, N);
-	fprintf(logfile,"Norm=%f \n", norm);
+	//double norm;
+	//norm = LAPACKE_zlange(LAPACK_ROW_MAJOR, '1', N, N, inv_auxiliary, N);
+	//fprintf(logfile,"Norm=%f \n", norm);
 
     int* IPIV = malloc(N*sizeof(int));
     // lapack_int LAPACKE_zgetrf( int matrix_layout, lapack_int m, lapack_int n, lapack_complex_double* a,
@@ -176,6 +176,111 @@ void inv(doublecomplex ** ro){
     }
     free(IPIV);
 }
+
+void QR(doublecomplex ** b, doublecomplex ** R_, size_t rows, size_t columns){
+	// The right side of the linear equation is fed to the input - b. When outputting, this matrix stores Q.
+	// The matrix R stores R part from QR decomposition.
+	//Copy data from 2D array (b) to auxiliary 1D array.
+	//The use of an auxiliary array is not optimal, but I have not come up with another way.
+	//Perhaps if you use LAPACK_COL_MAJOR, you can avoid using the auxiliary matrix.
+	//To do this, you need to move away from 2D arrays in favor of 1D ones.
+	size_t i, j;
+	lapack_complex_double *R_auxiliary, *QR_auxiliary, *tau;
+	R_auxiliary = calloc(columns*columns, sizeof(lapack_complex_double));
+	QR_auxiliary = calloc(rows*columns, sizeof(lapack_complex_double));
+	for (i = 0; i != rows; ++i)
+		for (j = 0; j != columns; ++j)
+	        QR_auxiliary[i*columns + j] = b[j][i];
+	tau = calloc(columns, sizeof(lapack_complex_double));
+	//---------------------------------------------------------------------------------------//
+	// test
+	int N = 0;
+	FILE *file;
+	file = fopen("./Test/b_(before_zgeqrf).txt", "w");
+	for(j=0;j<rows;j++) {
+		for(i=0;i<columns;i++) {
+			N = i + j*columns;
+			fprintf(file,"%.10f + %.10fj, ", creal(QR_auxiliary[N]), cimag(QR_auxiliary[N]));
+			if(i == columns-1) {
+				fprintf(file, "\n");
+			}
+		}
+	}
+	fclose(file);
+	//---------------------------------------------------------------------------------------//
+	LAPACKE_zgeqrf(LAPACK_ROW_MAJOR, (int) rows, (int) columns, QR_auxiliary, (int)columns, tau); // returns the Q, R in a packed format
+	// Copy the upper triangular Matrix R (columns x columns).
+	for(i = 0; i < columns; ++i)
+		memcpy(R_auxiliary+i*columns+i, QR_auxiliary+i*columns+i, (columns-i)*sizeof(doublecomplex));
+	//---------------------------------------------------------------------------------------//
+	// test
+	FILE *file2;
+	file2 = fopen("./Test/QR_(after_zgeqrf).txt", "w");
+	//fprintf(file2,"rows = %.10d, columns = %.10d \n", (int) rows, (int) columns);
+	for(j=0;j<rows;j++) {
+		for(i=0;i<columns;i++) {
+			N = i + j*columns;
+			fprintf(file2,"%.10f + %.10fj, ", creal(QR_auxiliary[N]), cimag(QR_auxiliary[N]));
+			if(i == columns-1) {
+				fprintf(file2, "\n");
+			}
+		}
+	}
+	fclose(file2);
+
+	FILE *file4;
+	file4 = fopen("./Test/R_(after_zgeqrf).txt", "w");
+	for(j=0;j<columns;j++) {
+		for(i=0;i<columns;i++) {
+			N = i + j*columns;
+			fprintf(file4,"%.10f + %.10fj, ", creal(R_auxiliary[N]), cimag(R_auxiliary[N]));
+			if(i == columns-1) {
+				fprintf(file4, "\n");
+			}
+		}
+	}
+	fclose(file4);
+
+	FILE *file5;
+	file5 = fopen("./Test/tau_(after_zgeqrf).txt", "w");
+	for(j=0;j<columns;j++) {
+		fprintf(file5,"%.10f + %.10fj, ", creal(tau[j]), cimag(tau[j]));
+	}
+	fclose(file5);
+	//---------------------------------------------------------------------------------------//
+	LAPACKE_zungqr(LAPACK_ROW_MAJOR, (int) rows, (int) columns, (int) columns, QR_auxiliary, (int) columns, tau); // returns the Q in qr_auxiliary
+	//---------------------------------------------------------------------------------------//
+	// test
+	FILE *file3;
+	file3 = fopen("./Test/Q_(after_zungqr).txt", "w");
+	//fprintf(file3,"%.10d\n", info);
+	for(j=0;j<rows;j++) {
+		for(i=0;i<columns;i++) {
+			N = i + j*columns;
+			fprintf(file3,"%.10f + %.10fj, ", creal(QR_auxiliary[N]), cimag(QR_auxiliary[N]));
+			if(i == columns-1) {
+				fprintf(file3, "\n");
+			}
+		}
+	}
+	fclose(file3);
+	//---------------------------------------------------------------------------------------//
+	// inverse copy data from auxiliary 1D array to 2D array (b).
+	for (i = 0; i != rows; ++i) { //row
+		for (j = 0; j != columns; ++j) { //column
+			b[j][i] = QR_auxiliary[i*columns + j];
+		}
+	}
+	for (i = 0; i != columns; ++i) { //row
+		for (j = 0; j != columns; ++j) { //column
+			R_[j][i] = R_auxiliary[i*columns + j];
+		}
+	}
+	free(tau);
+	free(R_auxiliary);
+	free(QR_auxiliary);
+}
+
 
 void sq_matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b){
 	size_t i, j, idx;
