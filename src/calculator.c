@@ -766,8 +766,9 @@ static void AllocateEverything(void)
 			inv_auxiliary=(doublecomplex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(doublecomplex));
 			mutrix_mult_B_auxiliary=(doublecomplex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(doublecomplex));
 			mutrix_mult_C_auxiliary=(doublecomplex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(doublecomplex));
-			R=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex));
 			a_matrix=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
+
+			R=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex)); // for QR-decomposition
 
 			for(size_t i=0;i<BLOCK_SIZE;i++) {
 				EincArray[i]=malloc(local_nRows*sizeof(doublecomplex));
@@ -787,7 +788,7 @@ static void AllocateEverything(void)
 				beta_Matx[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
 				alfa_Matx[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
 
-				R[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
+				R[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex)); // for QR-decomposition
 			}
 			break;
 	}

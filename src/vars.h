@@ -134,7 +134,8 @@ doublecomplex **AvecbufferArray; // used to hold the result of matrix-vector pro
 doublecomplex *inv_auxiliary;
 doublecomplex *mutrix_mult_B_auxiliary;
 doublecomplex *mutrix_mult_C_auxiliary;
-doublecomplex **R; // s*s
-
 
 doublecomplex ** a_matrix;
+
+// for QR-decomposition:
+doublecomplex **R; // s*s
