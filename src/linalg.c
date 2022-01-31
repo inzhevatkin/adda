@@ -185,6 +185,7 @@ void QR(doublecomplex ** b, doublecomplex ** R_, size_t rows, size_t columns){
 	//Perhaps if you use LAPACK_COL_MAJOR, you can avoid using the auxiliary matrix.
 	//To do this, you need to move away from 2D arrays in favor of 1D ones.
 	size_t i, j;
+	lapack_int info = 0;
 	int lda = columns;
 	lapack_complex_double *R_auxiliary, *QR_auxiliary, *tau;
 	R_auxiliary = calloc(columns*columns, sizeof(lapack_complex_double));
@@ -193,11 +194,19 @@ void QR(doublecomplex ** b, doublecomplex ** R_, size_t rows, size_t columns){
 		for (j = 0; j != columns; ++j)
 	        QR_auxiliary[i*columns + j] = b[j][i];
 	tau = calloc(columns, sizeof(lapack_complex_double));
-	LAPACKE_zgeqrf(LAPACK_ROW_MAJOR, (int) rows, (int) columns, QR_auxiliary, lda, tau); // returns the Q, R in a packed format
+	info = LAPACKE_zgeqrf(LAPACK_ROW_MAJOR, (int) rows, (int) columns, QR_auxiliary, lda, tau); // returns the Q, R in a packed format
+	if(info != 0)
+		fprintf(logfile,"LAPACKE_zgeqrf error. Output info != 0. \n");
+	else
+		fprintf(logfile,"LAPACKE_zgeqrf worked successfully. \n");
 	// Copy the upper triangular Matrix R (columns x columns).
 	for(i = 0; i < columns; ++i)
 		memcpy(R_auxiliary+i*columns+i, QR_auxiliary+i*columns+i, (columns-i)*sizeof(doublecomplex));
-	LAPACKE_zungqr(LAPACK_ROW_MAJOR, (int) rows, (int) columns, (int) columns, QR_auxiliary, lda, tau); // returns the Q in qr_auxiliary
+	info = LAPACKE_zungqr(LAPACK_ROW_MAJOR, (int) rows, (int) columns, (int) columns, QR_auxiliary, lda, tau); // returns the Q in qr_auxiliary
+	if(info != 0)
+		fprintf(logfile,"LAPACKE_zungqr error. Output info != 0. \n");
+	else
+		fprintf(logfile,"LAPACKE_zungqr worked successfully. \n");
 	// inverse copy data from auxiliary 1D array to 2D array (b).
 	for (i = 0; i != rows; ++i) { //row
 		for (j = 0; j != columns; ++j) { //column
