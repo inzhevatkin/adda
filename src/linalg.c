@@ -277,6 +277,94 @@ void QR2(doublecomplex ** b, doublecomplex ** R_, size_t rows, size_t columns){
 }
 
 
+// check: ||A-QR||/||A|| < threshold
+bool QR_first_check(doublecomplex ** Q_, doublecomplex ** R_, doublecomplex ** A_, size_t rows, size_t columns, double thresh){
+	size_t i ,j;
+	lapack_complex_double *Q_auxiliary, *R_auxiliary, *QR_auxiliary, *A_auxiliary;
+	Q_auxiliary = calloc(rows*columns, sizeof(lapack_complex_double));
+	R_auxiliary = calloc(columns*columns, sizeof(lapack_complex_double));
+	QR_auxiliary = calloc(rows*columns, sizeof(lapack_complex_double));
+	A_auxiliary = calloc(rows*columns, sizeof(lapack_complex_double));
+	for (i = 0; i != rows; ++i)
+		for (j = 0; j != columns; ++j)
+	        Q_auxiliary[i*columns + j] = Q_[j][i];
+	for (i = 0; i != columns; ++i)
+		for (j = 0; j != columns; ++j)
+			R_auxiliary[i*columns + j] = R_[j][i];
+	for (i = 0; i != rows; ++i)
+		for (j = 0; j != columns; ++j)
+			A_auxiliary[i*columns + j] = A_[j][i];
+
+	// QR
+	// C := alpha*op( A )*op( B ) + beta*C
+	const doublecomplex alpha_zgemm = 1;
+	const doublecomplex beta_zgemm = 0;
+	cblas_zgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, rows, columns, columns, &alpha_zgemm, Q_auxiliary,
+				columns, R_auxiliary, columns, &beta_zgemm, QR_auxiliary, columns);
+	// A - QR
+	// We implement through the standard loop, not through the LAPACK/BLAS functionality.
+	// QR_auxiliary stores the difference.
+	for (i = 0; i != rows; ++i)
+		for (j = 0; j != columns; ++j)
+			QR_auxiliary[i*columns + j] = A_auxiliary[i*columns + j] - QR_auxiliary[i*columns + j];
+
+	// ||A - QR||
+	// Calculate Frobenius norm.
+	double norm_num = LAPACKE_zlange(LAPACK_ROW_MAJOR, 'F', rows, columns, QR_auxiliary, columns);
+	fprintf(logfile,"||A-QR|| = %.30f,\n", norm_num);
+	// ||A||
+	double norm_den = LAPACKE_zlange(LAPACK_ROW_MAJOR, 'F', rows, columns, A_auxiliary, columns);
+	fprintf(logfile,"||A|| = %.30f,\n", norm_den);
+
+	double ratio = norm_num / norm_den;
+	fprintf(logfile,"||A-QR||/||A|| = %.30f,\n", ratio);
+
+	free(Q_auxiliary);
+	free(R_auxiliary);
+	free(QR_auxiliary);
+	free(A_auxiliary);
+
+	if(ratio < thresh)
+		return true;
+	else
+		return false;
+}
+
+// check:  ||I-Q^HQ|| < threshold
+bool QR_second_check(doublecomplex ** Q_, size_t rows, size_t columns, double thresh) {
+	size_t i, j;
+	lapack_complex_double *Q_auxiliary;
+	Q_auxiliary = calloc(rows*columns, sizeof(lapack_complex_double));
+	for (i = 0; i != rows; ++i)
+		for (j = 0; j != columns; ++j)
+			Q_auxiliary[i*columns + j] = Q_[j][i];
+	lapack_complex_double * QHQ = calloc(columns*columns, sizeof(lapack_complex_double));
+	// Q^HQ
+	// C := alpha*A*A**H + beta*C
+	cblas_zherk(CblasRowMajor, CblasUpper, CblasConjTrans, columns, rows, 1, Q_auxiliary, columns, 0, QHQ, columns);
+	// I-Q^HQ
+	// QHQ stores the difference.
+	for (i = 0; i != columns; ++i) {
+		for (j = 0; j != columns; ++j) {
+			if (i==j)
+				QHQ[i*columns + j] = 1 - QHQ[i*columns + j];
+			else
+				QHQ[i*columns + j] = - QHQ[i*columns + j];
+		}
+	}
+	// ||I-Q^HQ||
+	double norm = LAPACKE_zlange(LAPACK_ROW_MAJOR, 'F', columns, columns, QHQ, columns);
+	fprintf(logfile,"||I-Q^HQ|| = %.30f,\n", norm);
+
+	free(QHQ);
+	free(Q_auxiliary);
+
+	if(norm < thresh)
+		return true;
+	else
+		return false;
+}
+
 void sq_matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b){
 	size_t i, j, idx;
 	size_t size = BLOCK_SIZE;

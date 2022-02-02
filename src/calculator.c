@@ -768,7 +768,9 @@ static void AllocateEverything(void)
 			mutrix_mult_C_auxiliary=(doublecomplex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(doublecomplex));
 			a_matrix=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
 
-			R=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex)); // for QR-decomposition
+			// for QR-decomposition:
+			R=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex));
+			B_copy=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
 
 			for(size_t i=0;i<BLOCK_SIZE;i++) {
 				EincArray[i]=malloc(local_nRows*sizeof(doublecomplex));
@@ -788,7 +790,9 @@ static void AllocateEverything(void)
 				beta_Matx[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
 				alfa_Matx[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
 
-				R[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex)); // for QR-decomposition
+				// for QR-decomposition:
+				R[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
+				B_copy[i]=malloc(local_nRows*sizeof(doublecomplex));
 			}
 			break;
 	}
@@ -976,7 +980,9 @@ void FreeEverything(void)
 				free(EincArray[i]);
 				free(AvecbufferArray[i]);
 				free(a_matrix[i]);
+				// for qr-decomposition:
 				free(R[i]);
+				free(B_copy[i]);
 			}
 			free(xvecArray);
 			free(rvecArray);
@@ -996,7 +1002,9 @@ void FreeEverything(void)
 			free(mutrix_mult_B_auxiliary);
 			free(mutrix_mult_C_auxiliary);
 			free(a_matrix);
+			// for qr-decomposition:
 			free(R);
+			free(B_copy);
 			break;
 	}
 	/* TO ADD NEW ITERATIVE SOLVER

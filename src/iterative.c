@@ -778,17 +778,17 @@ ITER_FUNC(BiCGBlock)
 			Dz("Current iteration: "GFORM_DEBUG,(double)niter);
 			if (niter==1) {
 				// hypothesis: rvecArray = B
-				QR(rvecArray, R, local_nRows, BLOCK_SIZE);
+				// QR(rvecArray, R, local_nRows, BLOCK_SIZE);
 				// rvecArray = Q
-				equate_matrices(pvecArray, rvecArray);
+				// equate_matrices(pvecArray, rvecArray);
 			}
 			else {
 				// output of multiplication pTp, rTr
 				aTb(pMult, pvecArray, pvecArray, &Timing_OneIterComm); // s*s
 				aTb(rMult, rvecArray, rvecArray, &Timing_OneIterComm); // s*s
 			}
-			// alfa=(pT.A.p)^-1.(rT.r)
 			//--------------------------------------------------------------------------------------//
+			// alfa=(pT.A.p)^-1.(rT.r)
 			// s=BLOCK_SIZE
 			for(size_t j=0;j<BLOCK_SIZE;j++){
 				MatVec_wrapper(pvecArray[j],AvecbufferArray[j],NULL,false,&Timing_OneIterMVP,&Timing_OneIterMVPComm);
@@ -1541,15 +1541,36 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 		if (IterMethod==IT_BICG_BLOCK) {
 			for(size_t i=0;i<BLOCK_SIZE;i++) {
 				nMult_mat(pvecArray[i],EincArray[i],cc_sqrt);
-				//loc_temp=nNorm2(pvecArray[i],&Timing_InitIterComm); // |r_0|^2 when x_0=0
-				//fprintf(logfile,"norm = %.10f,\n", loc_temp);
-				//if (loc_temp > temp) {
-				//	temp = loc_temp;
-				//}
-				// for QR-decomposition norm = 1:
-				temp=1;
 			}
-			fprintf(logfile,"max norm = %.10f,\n", temp);
+			// make a copy of the right side
+			for(size_t i=0;i<BLOCK_SIZE;i++) {
+				for(size_t j=0;j<local_nRows;j++) {
+					B_copy[i][j]=pvecArray[i][j];
+				}
+			}
+			// find qr-decomposition of rvecArray
+			QR(pvecArray, R, local_nRows, BLOCK_SIZE);
+			// check: ||A-QR||/||A|| < threshold
+			double thresh = pow(10, -10);
+			if( QR_first_check(pvecArray, R, B_copy, local_nRows, BLOCK_SIZE, thresh) )
+				fprintf(logfile,"First QR test succeeded: ||A-QR||/||A|| < threshold \n");
+			else
+				fprintf(logfile,"First QR test failed: ||A-QR||/||A|| >= threshold \n");
+
+			if( QR_second_check(pvecArray, local_nRows, BLOCK_SIZE, thresh) )
+				fprintf(logfile,"Second QR test succeeded: ||I-Q^HQ|| < threshold \n");
+			else
+				fprintf(logfile,"Second QR test failed: ||I-Q^HQ|| >= threshold \n");
+
+			// find the maximum norm:
+			for(size_t i=0;i<BLOCK_SIZE;i++) {
+				loc_temp=nNorm2(pvecArray[i],&Timing_InitIterComm);
+				fprintf(logfile,"squared norm = %.10f\n", loc_temp);
+				if (loc_temp > temp) {
+					temp = loc_temp;
+				}
+			}
+			fprintf(logfile,"max squared norm = %.10f\n", temp);
 		}
 		else {
 			nMult_mat(pvec,Einc,cc_sqrt);

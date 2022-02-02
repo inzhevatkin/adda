@@ -139,3 +139,4 @@ doublecomplex ** a_matrix;
 
 // for QR-decomposition:
 doublecomplex **R; // s*s
+doublecomplex **B_copy; // n*s
