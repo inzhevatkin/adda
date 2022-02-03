@@ -30,3 +30,9 @@ src/seq/block1000/log
 src/seq/block100_bicg/CrossSec-Y
 src/seq/block100_bicg/log
 src/seq/block100_bicg/mueller
+src/seq/block200/CrossSec-Y
+src/seq/block200/log
+src/seq/block200/mueller
+src/seq/block50/CrossSec-Y
+src/seq/block50/log
+src/seq/block50/mueller

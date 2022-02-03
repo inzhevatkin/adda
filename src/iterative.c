@@ -1691,7 +1691,6 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 			}
 		}
 		matrix_mult(xvecArray, B_copy, R_Array, local_nRows, BLOCK_SIZE);
-		nCopy(pvec, pvecArray[0]);
 		nCopy(xvec, xvecArray[0]);
 		nCopy(Einc, EincArray[0]);
 		prop[0]=0;

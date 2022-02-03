@@ -224,59 +224,6 @@ void QR(doublecomplex ** b, doublecomplex ** R_, size_t rows, size_t columns){
 }
 
 
-void QR2(doublecomplex ** b, doublecomplex ** R_, size_t rows, size_t columns){
-	// LAPACK_COL_MAJOR
-	// The right side of the linear equation is fed to the input - b. When outputting, this matrix stores Q.
-	// The matrix R stores R part from QR decomposition.
-	// Copy data from 2D array (b) to auxiliary 1D array (QR_auxiliary).
-	// The use of an auxiliary array is not optimal, but I have not come up with another way.
-	// Perhaps if you use LAPACK_COL_MAJOR, you can avoid using the auxiliary matrix.
-	// To do this, you need to move away from 2D arrays in favor of 1D ones.
-	size_t i, j;
-	int lda = rows;
-	int ldc = rows;
-	char side = 'R';
-	char trans = 'N';
-	lapack_complex_double *R_auxiliary, *QR_auxiliary, *tau, *C;
-	R_auxiliary = calloc(columns*columns, sizeof(lapack_complex_double));
-	QR_auxiliary = calloc(rows*columns, sizeof(lapack_complex_double));
-	C = calloc(rows*columns, sizeof(lapack_complex_double));
-	for (j = 0; j != columns; ++j) {
-		for (i = 0; i != rows; ++i) {
-			QR_auxiliary[i+j*rows] = b[j][i];
-		}
-	}
-	for (j = 0; j != columns; ++j) {
-		for (i = 0; i != rows; ++i) {
-			if(i==j)
-				C[i+j*rows] = 1;
-			else
-				C[i+j*rows] = 0;
-		}
-	}
-	tau = calloc(columns, sizeof(lapack_complex_double));
-	LAPACKE_zgeqrf(LAPACK_COL_MAJOR, (int) columns, (int) rows, QR_auxiliary, lda, tau); // returns the Q, R in a packed format
-	//LAPACKE_zungqr(LAPACK_COL_MAJOR, (int) columns, (int) rows, (int) columns, QR_auxiliary, lda, tau); // returns the Q in qr_auxiliary
-	LAPACKE_zunmqr(LAPACK_COL_MAJOR, side, trans,  (int) columns, (int) rows, (int) columns, QR_auxiliary, lda, tau, C, ldc);
-
-	// inverse copy data from auxiliary 1D array to 2D array (b).
-	for (j = 0; j != columns; ++j) {
-		for (i = 0; i != rows; ++i) {
-			b[j][i] = C[i+j*rows];
-		}
-	}
-	/*for (i = 0; i != columns; ++i) { //row
-		for (j = 0; j != columns; ++j) { //column
-			R_[j][i] = R_auxiliary[i*columns + j];
-		}
-	}*/
-	free(tau);
-	free(R_auxiliary);
-	free(QR_auxiliary);
-	free(C);
-}
-
-
 // check: ||A-QR||/||A|| < threshold
 bool QR_first_check(doublecomplex ** Q_, doublecomplex ** R_, doublecomplex ** A_, size_t rows, size_t columns, double thresh){
 	size_t i ,j;

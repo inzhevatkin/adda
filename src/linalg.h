@@ -74,7 +74,6 @@ void nConj(doublecomplex * restrict a);
 
 void inv(doublecomplex ** ro);
 void QR(doublecomplex ** b, doublecomplex ** R, size_t rows, size_t columns);
-void QR2(doublecomplex ** b, doublecomplex ** R, size_t rows, size_t columns);
 bool QR_first_check(doublecomplex ** Q_, doublecomplex ** R_, doublecomplex ** A_, size_t rows, size_t columns, double thresh);
 bool QR_second_check(doublecomplex ** Q_, size_t rows, size_t columns, double thresh);
 void matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t rows, size_t columns);
