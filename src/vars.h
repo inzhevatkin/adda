@@ -112,7 +112,7 @@ extern int * restrict position_full;
 
 #endif // __vars_h
 
-#define BLOCK_SIZE 100
+#define BLOCK_SIZE 1000
 // the first index of the arrays is a column, the second is a row
 doublecomplex **xvecArray; // n*s
 doublecomplex **rvecArray; // n*s
@@ -138,5 +138,5 @@ doublecomplex *mutrix_mult_C_auxiliary;
 doublecomplex ** a_matrix;
 
 // for QR-decomposition:
-doublecomplex **R; // s*s
+doublecomplex **R_Array; // s*s
 doublecomplex **B_copy; // n*s

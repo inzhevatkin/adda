@@ -22,3 +22,11 @@ src/seq/block100/CrossSec-Y
 src/seq/block100/CrossSec-Y
 src/seq/block100/log
 src/seq/block100/mueller
+src/seq/bicg2/CrossSec-Y
+src/seq/block100/CrossSec-Y
+src/seq/block100/log
+src/seq/block100/mueller
+src/seq/block1000/log
+src/seq/block100_bicg/CrossSec-Y
+src/seq/block100_bicg/log
+src/seq/block100_bicg/mueller

@@ -1549,10 +1549,10 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 				}
 			}
 			// find qr-decomposition of rvecArray
-			QR(pvecArray, R, local_nRows, BLOCK_SIZE);
+			QR(pvecArray, R_Array, local_nRows, BLOCK_SIZE);
 			// check: ||A-QR||/||A|| < threshold
 			double thresh = pow(10, -10);
-			if( QR_first_check(pvecArray, R, B_copy, local_nRows, BLOCK_SIZE, thresh) )
+			if( QR_first_check(pvecArray, R_Array, B_copy, local_nRows, BLOCK_SIZE, thresh) )
 				fprintf(logfile,"First QR test succeeded: ||A-QR||/||A|| < threshold \n");
 			else
 				fprintf(logfile,"First QR test failed: ||A-QR||/||A|| >= threshold \n");
@@ -1683,6 +1683,14 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 	 * technique (as starting vector for next system)
 	 */
 	if (IterMethod==IT_BICG_BLOCK) {
+		// find the original unknown x
+		// make a copy of x
+		for(size_t i=0;i<BLOCK_SIZE;i++) {
+			for(size_t j=0;j<local_nRows;j++) {
+				B_copy[i][j]=xvecArray[i][j];
+			}
+		}
+		matrix_mult(xvecArray, B_copy, R_Array, local_nRows, BLOCK_SIZE);
 		nCopy(pvec, pvecArray[0]);
 		nCopy(xvec, xvecArray[0]);
 		nCopy(Einc, EincArray[0]);

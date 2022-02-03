@@ -402,10 +402,11 @@ void matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, s
 	// It is impossible to use here already implemented functions of vector products,
 	// since these functions imply multiplication of vectors of size local_nRows.
 	doublecomplex sum;
-	for (size_t j=0;j<rows;j++) { //row of first matrix
-		for (size_t k=0;k<columns;k++) { //column of second matrix
+	size_t j, k, i;
+	for (j=0;j<rows;j++) { //row of first matrix
+		for (k=0;k<columns;k++) { //column of second matrix
 			sum=0;
-			for (size_t i=0;i<columns;i++) sum+=a[i][j]*b[k][i];
+			for (i=0;i<columns;i++) sum+=a[i][j]*b[k][i];
 			res[k][j]=sum;
 		}
 	}
