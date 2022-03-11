@@ -43,6 +43,7 @@ extern const angle_set beta_int,gamma_int,theta_int,phi_int;
 extern const bool avg_inc_pol;
 extern const double polNlocRp;
 extern const char *alldir_parms,*scat_grid_parms;
+extern const size_t block_size_var;
 // defined and initialized in timing.c
 extern TIME_TYPE Timing_Init,Timing_Init_Int;
 #ifdef OPENCL
@@ -748,31 +749,31 @@ static void AllocateEverything(void)
 			memory+=2*tmp;
 			break;
 		case IT_BICG_BLOCK:
-			EincArray=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
-			rvecArray=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
-			rMult=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
-			pvecArray=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
-			pMult=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
-			xvecArray=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
-			AvecbufferArray=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
-			pvec_koeff=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
+			EincArray=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
+			rvecArray=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
+			rMult=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
+			pvecArray=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
+			pMult=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
+			xvecArray=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
+			AvecbufferArray=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
+			pvec_koeff=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
 
-			ro_Matx=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
-			ro_new_Matx=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
-			po_Matx=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
-			po_new_Matx=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
-			beta_Matx=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
-			alfa_Matx=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
-			inv_auxiliary=(doublecomplex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(doublecomplex));
-			mutrix_mult_B_auxiliary=(doublecomplex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(doublecomplex));
-			mutrix_mult_C_auxiliary=(doublecomplex *)malloc(BLOCK_SIZE*BLOCK_SIZE*sizeof(doublecomplex));
-			a_matrix=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
+			ro_Matx=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
+			ro_new_Matx=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
+			po_Matx=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
+			po_new_Matx=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
+			beta_Matx=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
+			alfa_Matx=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
+			inv_auxiliary=(doublecomplex *)malloc(block_size_var*block_size_var*sizeof(doublecomplex));
+			mutrix_mult_B_auxiliary=(doublecomplex *)malloc(block_size_var*block_size_var*sizeof(doublecomplex));
+			mutrix_mult_C_auxiliary=(doublecomplex *)malloc(block_size_var*block_size_var*sizeof(doublecomplex));
+			a_matrix=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
 
 			// for QR-decomposition:
-			R_Array=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex));
-			B_copy=(doublecomplex **)malloc(BLOCK_SIZE*sizeof(doublecomplex *));
+			R_Array=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex));
+			B_copy=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
 
-			for(size_t i=0;i<BLOCK_SIZE;i++) {
+			for(size_t i=0;i<block_size_var;i++) {
 				EincArray[i]=malloc(local_nRows*sizeof(doublecomplex));
 				rvecArray[i]=malloc(local_nRows*sizeof(doublecomplex));
 				rMult[i]=malloc(local_nRows*sizeof(doublecomplex));
@@ -783,15 +784,15 @@ static void AllocateEverything(void)
 				pvec_koeff[i]=malloc(local_nRows*sizeof(doublecomplex));
 				a_matrix[i]=malloc(local_nRows*sizeof(doublecomplex));
 
-				ro_Matx[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
-				ro_new_Matx[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
-				po_Matx[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
-				po_new_Matx[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
-				beta_Matx[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
-				alfa_Matx[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
+				ro_Matx[i]=malloc(block_size_var*sizeof(doublecomplex));
+				ro_new_Matx[i]=malloc(block_size_var*sizeof(doublecomplex));
+				po_Matx[i]=malloc(block_size_var*sizeof(doublecomplex));
+				po_new_Matx[i]=malloc(block_size_var*sizeof(doublecomplex));
+				beta_Matx[i]=malloc(block_size_var*sizeof(doublecomplex));
+				alfa_Matx[i]=malloc(block_size_var*sizeof(doublecomplex));
 
 				// for QR-decomposition:
-				R_Array[i]=malloc(BLOCK_SIZE*sizeof(doublecomplex));
+				R_Array[i]=malloc(block_size_var*sizeof(doublecomplex));
 				B_copy[i]=malloc(local_nRows*sizeof(doublecomplex));
 			}
 			break;
@@ -964,7 +965,7 @@ void FreeEverything(void)
 			Free_cVector(vec2);
 			break;
 		case IT_BICG_BLOCK:
-			for(size_t i=0;i<BLOCK_SIZE;i++) {
+			for(size_t i=0;i<block_size_var;i++) {
 				free(xvecArray[i]);
 				free(rvecArray[i]);
 				free(rMult[i]);

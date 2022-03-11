@@ -142,6 +142,8 @@ bool recalc_resid;         // whether to recalculate residual at the end of iter
 enum chpoint chp_type;     // type of checkpoint (to save)
 time_t chp_time;           // time of checkpoint (in sec)
 char const *chp_dir;       // directory name to save/load checkpoint
+size_t block_size_var;		   // for block-iterative algorithm
+bool qr_decomposition;
 // used in make_particle.c
 enum sh shape;                   // particle shape definition
 int sh_Npars;                    // number of shape parameters
@@ -331,6 +333,7 @@ PARSE_FUNC(alldir_inp);
 PARSE_FUNC(anisotr);
 PARSE_FUNC(asym);
 PARSE_FUNC(beam);
+PARSE_FUNC(block_size);
 PARSE_FUNC(chp_dir);
 PARSE_FUNC(chp_load);
 PARSE_FUNC(chp_type);
@@ -366,6 +369,7 @@ PARSE_FUNC(phi_integr);
 PARSE_FUNC(pol);
 PARSE_FUNC(prognosis);
 PARSE_FUNC(prop);
+PARSE_FUNC(qr_decomp);
 PARSE_FUNC(recalc_resid);
 PARSE_FUNC(rect_dip);
 #ifndef SPARSE
@@ -410,6 +414,7 @@ static struct opt_struct options[]={
 	{PAR(beam),"<type> [<args>]","Sets the incident beam, either predefined or 'read' from file. All parameters of "
 		"predefined beam types (if present) are floats.\n"
 		"Default: plane",UNDEF,beam_opt},
+	{PAR(block_size),"int","The block size of the block-iterative algorithm. Implies the use of a block algorithm",1,NULL},
 	{PAR(chp_dir),"<dirname>","Sets directory for the checkpoint (both for saving and loading).\n"
 		"Default: "FD_CHP_DIR,1,NULL},
 	{PAR(chp_load),"","Restart a simulation from a checkpoint",0,NULL},
@@ -581,6 +586,7 @@ static struct opt_struct options[]={
 	{PAR(prop),"<x> <y> <z>","Sets propagation direction of incident radiation, float. Normalization (to the unity "
 		"vector) is performed automatically. For point-dipole incident beam this determines its direction.\n"
 		"Default: 0 0 1",3,NULL},
+	{PAR(qr_decomp),"","Sets a flag that says we are doing QR-decomposition. Implies the use of a block-iterative algorithm",0,NULL},
 	{PAR(recalc_resid),"","Recalculate residual at the end of iterative solver.",0,NULL},
 	{PAR(rect_dip),"<x> <y> <z>","Use rectangular-cuboid dipoles. Three arguments are the relative dipole sizes along "
 		"the corresponding axes. Absolute scale is not relevant, i.e. '1 2 2' is equivalent to '0.5 1 1'.\n"
@@ -996,6 +1002,13 @@ PARSE_FUNC(beam)
 	}
 	if(!found) NotSupported("Beam type",argv[1]);
 }
+PARSE_FUNC(block_size)
+{
+	int temp;
+	ScanIntError(argv[1],&temp);
+	TestPositive(temp,"block_size");
+	block_size_var = (size_t)temp;
+}
 PARSE_FUNC(chp_dir)
 {
 	chp_dir=ScanStrError(argv[1],MAX_DIRNAME);
@@ -1385,6 +1398,10 @@ PARSE_FUNC(prop)
 	if (tmp==0) PrintErrorHelp("Given propagation vector is null");
 	vMultScal(1/sqrt(tmp),prop_0,prop_0);
 	prop_used=true;
+}
+PARSE_FUNC(qr_decomp)
+{
+	qr_decomposition=true;
 }
 PARSE_FUNC(recalc_resid)
 {
@@ -1938,6 +1955,9 @@ void InitVariables(void)
 	rectScaleY=1.0;
 	rectScaleZ=1.0;
 	maxRectScale=1;
+	// for block-iterative algorithm
+	block_size_var=1;
+	qr_decomposition=false;
 
 #ifdef OPENCL
 	gpuInd=0;

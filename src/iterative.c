@@ -58,6 +58,8 @@ extern const bool recalc_resid;
 extern const enum chpoint chp_type;
 extern const time_t chp_time;
 extern const char *chp_dir;
+extern const size_t block_size_var;
+extern const bool qr_decomposition;
 // defined and initialized in timing.c
 extern time_t last_chp_wt;
 extern TIME_TYPE Timing_OneIter,Timing_OneIterComm,Timing_InitIter,Timing_InitIterComm,Timing_IntFieldOneComm,
@@ -748,9 +750,9 @@ ITER_FUNC(BiCGStab)
 void output(const char * name, doublecomplex ** Array)
 {
 	fprintf(logfile,"%s: ", name);
-	for(size_t j=0;j<BLOCK_SIZE;j++){
+	for(size_t j=0;j<block_size_var;j++){
 		fprintf(logfile,"\n");
-		for(size_t i=0;i<BLOCK_SIZE;i++){
+		for(size_t i=0;i<block_size_var;i++){
 			fprintf(logfile,"%f ", (double)Array[i][j]);
 		}
 	}
@@ -778,7 +780,7 @@ ITER_FUNC(BiCGBlock)
 			Dz("Current iteration: "GFORM_DEBUG,(double)niter);
 			if (niter==1) {
 				// hypothesis: rvecArray = B
-				// QR(rvecArray, R, local_nRows, BLOCK_SIZE);
+				// QR(rvecArray, R, local_nRows, block_size_var);
 				// rvecArray = Q
 				// equate_matrices(pvecArray, rvecArray);
 			}
@@ -789,8 +791,8 @@ ITER_FUNC(BiCGBlock)
 			}
 			//--------------------------------------------------------------------------------------//
 			// alfa=(pT.A.p)^-1.(rT.r)
-			// s=BLOCK_SIZE
-			for(size_t j=0;j<BLOCK_SIZE;j++){
+			// s=block_size_var
+			for(size_t j=0;j<block_size_var;j++){
 				MatVec_wrapper(pvecArray[j],AvecbufferArray[j],NULL,false,&Timing_OneIterMVP,&Timing_OneIterMVPComm);
 			}
 			aTb(po_Matx, pvecArray, AvecbufferArray, &Timing_OneIterComm); // AvecbufferArray=A.p
@@ -798,7 +800,7 @@ ITER_FUNC(BiCGBlock)
 			// use one array for po, po^-1
 			inv(po_Matx);// s*s
 			aTb(ro_Matx, rvecArray, rvecArray, &Timing_OneIterComm); // s*s
-			matrix_mult(alfa_Matx, po_Matx, ro_Matx, BLOCK_SIZE, BLOCK_SIZE);
+			matrix_mult(alfa_Matx, po_Matx, ro_Matx, block_size_var, block_size_var);
 			fprintf(logfile,"alfa = %f + %f*I\n", creal(alfa_Matx[0][0]), cimag(alfa_Matx[0][0]));
 			//--------------------------------------------------------------------------------------//
 			// x_new=x_old + p_old*alfa
@@ -813,7 +815,7 @@ ITER_FUNC(BiCGBlock)
 			inv(ro_Matx);
 			aTb(ro_new_Matx, rvecArray, rvecArray, &Timing_OneIterComm); // s*s
 			// beta_Matx=ro_old_Matx^(-1).ro_new_Matx
-			matrix_mult(beta_Matx, ro_Matx, ro_new_Matx, BLOCK_SIZE, BLOCK_SIZE);
+			matrix_mult(beta_Matx, ro_Matx, ro_new_Matx, block_size_var, block_size_var);
 			fprintf(logfile,"beta = %f + %f*I\n", creal(beta_Matx[0][0]), cimag(beta_Matx[0][0]));
 			vector_new(pvecArray, rvecArray, pvecArray, beta_Matx, 1);
 
@@ -1477,7 +1479,7 @@ static const char *CalcInitField(double zero_resid,const enum incpol which)
 		case IF_ZERO:
 			// So far made support IT_BICG_BLOCK only for this case
 			if (IterMethod==IT_BICG_BLOCK) {
-				for(size_t i=0;i<BLOCK_SIZE;i++) {
+				for(size_t i=0;i<block_size_var;i++) {
 					nInit(xvecArray[i]); // x_0=0
 					for(size_t j=0;j<local_nRows;j++) {
 						rvecArray[i][j]=pvecArray[i][j]; // r_0=b
@@ -1539,31 +1541,32 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 	matvec_ready=false; // can be set to true only in CalcInitField (if !load_chpoint)
 	if (!load_chpoint) {
 		if (IterMethod==IT_BICG_BLOCK) {
-			for(size_t i=0;i<BLOCK_SIZE;i++) {
+			for(size_t i=0;i<block_size_var;i++) {
 				nMult_mat(pvecArray[i],EincArray[i],cc_sqrt);
 			}
 			// make a copy of the right side
-			for(size_t i=0;i<BLOCK_SIZE;i++) {
+			for(size_t i=0;i<block_size_var;i++) {
 				for(size_t j=0;j<local_nRows;j++) {
 					B_copy[i][j]=pvecArray[i][j];
 				}
 			}
 			// find qr-decomposition of rvecArray
-			QR(pvecArray, R_Array, local_nRows, BLOCK_SIZE);
+			if(qr_decomposition) {
+				QR(pvecArray, R_Array, local_nRows, block_size_var);
 			// check: ||A-QR||/||A|| < threshold
 			double thresh = pow(10, -10);
-			if( QR_first_check(pvecArray, R_Array, B_copy, local_nRows, BLOCK_SIZE, thresh) )
+			if( QR_first_check(pvecArray, R_Array, B_copy, local_nRows, block_size_var, thresh) )
 				fprintf(logfile,"First QR test succeeded: ||A-QR||/||A|| < threshold \n");
 			else
 				fprintf(logfile,"First QR test failed: ||A-QR||/||A|| >= threshold \n");
 
-			if( QR_second_check(pvecArray, local_nRows, BLOCK_SIZE, thresh) )
+			if( QR_second_check(pvecArray, local_nRows, block_size_var, thresh) )
 				fprintf(logfile,"Second QR test succeeded: ||I-Q^HQ|| < threshold \n");
 			else
 				fprintf(logfile,"Second QR test failed: ||I-Q^HQ|| >= threshold \n");
-
+			}
 			// find the maximum norm:
-			for(size_t i=0;i<BLOCK_SIZE;i++) {
+			for(size_t i=0;i<block_size_var;i++) {
 				loc_temp=nNorm2(pvecArray[i],&Timing_InitIterComm);
 				fprintf(logfile,"squared norm = %.10f\n", loc_temp);
 				if (loc_temp > temp) {
@@ -1667,6 +1670,25 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 		else if (counter>params[ind_m].mc) LogError(ONE_POS,"Residual norm haven't decreased for maximum allowed "
 			"number of iterations (%d)",params[ind_m].mc);
 	}
+	if (IterMethod==IT_BICG_BLOCK) {
+		if(qr_decomposition) {
+			// find the original unknown x
+			// make a copy of x
+			for(size_t i=0;i<block_size_var;i++) {
+				for(size_t j=0;j<local_nRows;j++) {
+					B_copy[i][j]=xvecArray[i][j];
+				}
+			}
+			matrix_mult(xvecArray, B_copy, R_Array, local_nRows, block_size_var);
+			temp=nNorm2(B_copy[0],&Timing_InitIterComm); //output only for the 0-block
+			resid_scale=1/temp;
+		}
+		nCopy(xvec, xvecArray[0]);
+		nCopy(Einc, EincArray[0]);
+		prop[0]=0;
+		prop[1]=0;
+		prop[2]=1;
+	}
 	if (recalc_resid) { // compute and print final residual norm
 		inprodR=ResidualNorm2(xvec,rvec,Avecbuffer,&Timing_MVP,&Timing_MVPComm,&Timing_IntFieldOneComm);
 		if (IFROOT) {
@@ -1682,21 +1704,6 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 	/* x is a solution of a modified system, not exactly internal field; should not be used further except for adaptive
 	 * technique (as starting vector for next system)
 	 */
-	if (IterMethod==IT_BICG_BLOCK) {
-		// find the original unknown x
-		// make a copy of x
-		for(size_t i=0;i<BLOCK_SIZE;i++) {
-			for(size_t j=0;j<local_nRows;j++) {
-				B_copy[i][j]=xvecArray[i][j];
-			}
-		}
-		matrix_mult(xvecArray, B_copy, R_Array, local_nRows, BLOCK_SIZE);
-		nCopy(xvec, xvecArray[0]);
-		nCopy(Einc, EincArray[0]);
-		prop[0]=0;
-		prop[1]=0;
-		prop[2]=1;
-	}
 	nMult_mat(pvec,xvec,cc_sqrt); // p now contains polarizations. Can be used to calculate e.g. scattered field faster.
 	if (chp_exit) return CHP_EXIT; // check if exiting after checkpoint
 	return (niter-1); // the number of iterations elapsed

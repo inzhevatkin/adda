@@ -27,6 +27,9 @@
 // system headers
 #include <string.h>
 
+// defined and initialized in param.c
+extern const size_t block_size_var;
+
 /* There are several optimization ideas used in this file:
  * - If usage of some function has coinciding arguments, than a special function for such case is created. In
  * particular, this allows consistent usage of 'restrict' keyword almost for all function arguments.
@@ -125,7 +128,7 @@ doublecomplex nDotProdSelf_conj(const doublecomplex * restrict a,TIME_TYPE *comm
 //======================================================================================================================
 
 void equate_matrices(doublecomplex ** a, doublecomplex ** b) {
-	for(size_t i=0;i<BLOCK_SIZE;i++) {
+	for(size_t i=0;i<block_size_var;i++) {
 		// number of rows = local_nRows.
 		nCopy(a[i], b[i]);
 	}
@@ -133,7 +136,7 @@ void equate_matrices(doublecomplex ** a, doublecomplex ** b) {
 
 void inv(doublecomplex ** ro){
 	size_t i, j, idx;
-	size_t N=BLOCK_SIZE;
+	size_t N=block_size_var;
     for (i = 0; i != N; ++i) { //row
         for (j = 0; j != N; ++j){ //column
             idx = i*N + j;
@@ -314,7 +317,7 @@ bool QR_second_check(doublecomplex ** Q_, size_t rows, size_t columns, double th
 
 void sq_matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b){
 	size_t i, j, idx;
-	size_t size = BLOCK_SIZE;
+	size_t size = block_size_var;
 	doublecomplex * A = inv_auxiliary;
 	doublecomplex * B = mutrix_mult_B_auxiliary;
 	doublecomplex * C = mutrix_mult_C_auxiliary;
@@ -374,8 +377,8 @@ void mTm(doublecomplex ** res, doublecomplex ** a) {
 	size_t j, k, i;
 	doublecomplex sum;
 
-	for (j=0;j<BLOCK_SIZE;j++) { //columns
-		for (k=0;k<BLOCK_SIZE;k++) { //columns
+	for (j=0;j<block_size_var;j++) { //columns
+		for (k=0;k<block_size_var;k++) { //columns
 			sum=0;
 			for (i=0;i<local_nRows;i++) sum+=a[j][i]*a[k][i];
 			res[k][j]=sum;
@@ -384,11 +387,11 @@ void mTm(doublecomplex ** res, doublecomplex ** a) {
 }
 
 void mTAm(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b)
-// res - BLOCK_SIZE*BLOCK_SIZE matrix
+// res - block_size_var*block_size_var matrix
 {
 	doublecomplex sum;
-	for (size_t j=0;j<BLOCK_SIZE;j++) { // column of a
-		for (size_t k=0;k<BLOCK_SIZE;k++) { // column of b
+	for (size_t j=0;j<block_size_var;j++) { // column of a
+		for (size_t k=0;k<block_size_var;k++) { // column of b
 			sum=0;
 			for (size_t i=0;i<local_nRows;i++) sum+=a[j][i]*b[k][i];
 			res[k][j]=sum;
@@ -397,10 +400,10 @@ void mTAm(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b)
 }
 
 void aTb(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, TIME_TYPE *comm_timing)
-// res - BLOCK_SIZE*BLOCK_SIZE matrix
+// res - block_size_var*block_size_var matrix
 {
-	for (size_t j=0;j<BLOCK_SIZE;j++) { // column of a
-		for (size_t k=0;k<BLOCK_SIZE;k++) { // column of b
+	for (size_t j=0;j<block_size_var;j++) { // column of a
+		for (size_t k=0;k<block_size_var;k++) { // column of b
 			res[k][j]=nDotProd_conj(a[j],b[k],comm_timing);
 		}
 	}
@@ -410,8 +413,8 @@ void aTb(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, TIME_TYPE
 void X_new(doublecomplex ** res, doublecomplex ** p_old, doublecomplex ** alfa)
 // x_new=x_old+p_old*alfa
 {
-	matrix_mult(pvec_koeff, p_old, alfa, local_nRows, BLOCK_SIZE);
-	for (size_t j=0;j<BLOCK_SIZE;j++) { //column
+	matrix_mult(pvec_koeff, p_old, alfa, local_nRows, block_size_var);
+	for (size_t j=0;j<block_size_var;j++) { //column
 		for (size_t k=0;k<local_nRows;k++) { //row
 			res[j][k]+=pvec_koeff[j][k];
 		}
@@ -421,8 +424,8 @@ void X_new(doublecomplex ** res, doublecomplex ** p_old, doublecomplex ** alfa)
 void R_new(doublecomplex ** res, doublecomplex ** r_old, doublecomplex ** Ap, doublecomplex ** alfa)
 //r_new=r_old - A*p_old*alfa
 {
-	matrix_mult(res, Ap, alfa, local_nRows, BLOCK_SIZE);
-	for (size_t j=0;j<BLOCK_SIZE;j++) {
+	matrix_mult(res, Ap, alfa, local_nRows, block_size_var);
+	for (size_t j=0;j<block_size_var;j++) {
 		for (size_t k=0;k<local_nRows;k++) {
 			res[j][k]=-res[j][k]+r_old[j][k];
 		}
@@ -432,8 +435,8 @@ void R_new(doublecomplex ** res, doublecomplex ** r_old, doublecomplex ** Ap, do
 void vector_new(doublecomplex ** res, doublecomplex ** a_old, doublecomplex ** b_old, doublecomplex ** koeff, int sign)
 // a_new=a_old+sign*b_old*koeff
 {
-	matrix_mult(pvec_koeff, b_old, koeff, local_nRows, BLOCK_SIZE);
-	for (size_t j=0;j<BLOCK_SIZE;j++) { //column
+	matrix_mult(pvec_koeff, b_old, koeff, local_nRows, block_size_var);
+	for (size_t j=0;j<block_size_var;j++) { //column
 		for (size_t k=0;k<local_nRows;k++) { //row
 			res[j][k]=a_old[j][k]+sign*pvec_koeff[j][k];
 		}
@@ -444,8 +447,8 @@ void P_new(doublecomplex ** res, doublecomplex ** r_new, doublecomplex ** p_old,
 // p_new=r_new+p_old*beta
 {
 	size_t j, k;
-	matrix_mult(pvec_koeff, p_old, beta, local_nRows, BLOCK_SIZE);
-	for (j=0;j<BLOCK_SIZE;j++) {
+	matrix_mult(pvec_koeff, p_old, beta, local_nRows, block_size_var);
+	for (j=0;j<block_size_var;j++) {
 		for (k=0;k<local_nRows;k++) {
 			res[j][k]=r_new[j][k]+pvec_koeff[j][k];
 		}
@@ -455,7 +458,7 @@ void P_new(doublecomplex ** res, doublecomplex ** r_new, doublecomplex ** p_old,
 double find_max(void) {
 	double sum_cur;
 	double sum_max=0;
-	for(size_t i=0;i<BLOCK_SIZE;i++){
+	for(size_t i=0;i<block_size_var;i++){
 		sum_cur=0;
 		for(size_t j=0;j<local_nRows;j++){
 			sum_cur += cAbs2(rvecArray[i][j]);

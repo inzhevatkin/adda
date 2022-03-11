@@ -55,6 +55,8 @@ extern const int phi_int_type;
 // defined and initialized in timing.c
 extern TIME_TYPE Timing_EPlane,Timing_EPlaneComm,Timing_IntField,Timing_IntFieldOne,Timing_ScatQuan,Timing_IncBeam;
 extern size_t TotalEFieldPlane;
+// defined and initialized in param.c
+extern const size_t block_size_var;
 
 // LOCAL VARIABLES
 
@@ -848,10 +850,12 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 {
 	int exit_status;
 	TIME_TYPE tstart;
-	double norm, teta, dt, fi, dfi;
-	dt=PI/(2*BLOCK_SIZE);
+	double norm, teta, dt, fi, dfi, tm, fim;
+	tm=PI/2; //maximum angle theta
+	dt=tm/block_size_var;
 	teta=-dt;
-	dfi=2*PI/BLOCK_SIZE;
+	fim=2*PI; //maximum angle phi
+	dfi=fim/block_size_var;
 	fi=-dfi;
 
 	tstart=GET_TIME();
@@ -859,11 +863,11 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 	D("Generating B");
 	D("GenerateB start");
 	if (IterMethod==IT_BICG_BLOCK) {
-		for(size_t i=0;i<BLOCK_SIZE;i++) {
-			//teta=(double)PI/2*rand()/RAND_MAX; // teta changes from 0 to PI/2
+		for(size_t i=0;i<block_size_var;i++) {
 			teta+=dt;
-			//fi=(double)2*PI*rand()/RAND_MAX; // fi changes from 0 to 2*PI
-			fi+=dfi;//fi=0
+			fi+=dfi;
+			//teta=(double)(PI/180)*rand()/RAND_MAX;
+			//fi=(double)(PI/180)*rand()/RAND_MAX;
 			prop[0]=sin(teta)*cos(fi);
 			prop[1]=sin(teta)*sin(fi);
 			prop[2]=cos(teta);
