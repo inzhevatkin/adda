@@ -1524,6 +1524,7 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 	double temp=0, loc_temp;
 	char tmp_str[MAX_LINE];
 	TIME_TYPE tstart,time_tmp,time_tmp2,time_tmp3;
+	bool flag_output=false;
 
 	// redundant initialization to remove warnings
 	time_tmp=time_tmp2=time_tmp3=0;
@@ -1550,6 +1551,32 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 					B_copy[i][j]=pvecArray[i][j];
 				}
 			}
+			if(flag_output) {
+				// Output B matrix:
+				FILE *file;
+				file = fopen("B_ADDA_b50.txt", "w");
+				fprintf(file, "{");
+				for(size_t j=0;j<local_nRows;j++) {
+					fprintf(file, "{");
+					for(size_t i=0;i<block_size_var;i++) {
+						fprintf(file,"%.30f + %.30f*I", creal(pvecArray[i][j]), cimag(pvecArray[i][j]));
+						if(i != block_size_var-1) {
+							fprintf(file, ", ");
+						}
+						else {
+							fprintf(file, "}");
+						}
+					}
+					if(j != local_nRows-1) {
+						fprintf(file, ",\n");
+					}
+					else {
+						fprintf(file, "}");
+					}
+				}
+				fclose(file);
+			}
+
 			// find qr-decomposition of rvecArray
 			if(qr_decomposition) {
 				QR(pvecArray, R_Array, local_nRows, block_size_var);
@@ -1564,6 +1591,55 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 				fprintf(logfile,"Second QR test succeeded: ||I-Q^HQ|| < threshold \n");
 			else
 				fprintf(logfile,"Second QR test failed: ||I-Q^HQ|| >= threshold \n");
+			}
+
+			if(flag_output) {
+				// Output Q matrix:
+				FILE *file3;
+				file3 = fopen("Q_ADDA_b50.txt", "w");
+				fprintf(file3, "{");
+				for(size_t j=0;j<local_nRows;j++) {
+					fprintf(file3, "{");
+					for(size_t i=0;i<block_size_var;i++) {
+						fprintf(file3,"%.30f + %.30f*I", creal(pvecArray[i][j]), cimag(pvecArray[i][j]));
+						if(i != block_size_var-1) {
+							fprintf(file3, ", ");
+						}
+						else {
+							fprintf(file3, "}");
+						}
+					}
+					if(j != local_nRows-1) {
+						fprintf(file3, ",\n");
+					}
+					else {
+						fprintf(file3, "}");
+					}
+				}
+				fclose(file3);
+				// Output R matrix:
+				FILE *file2;
+				file2 = fopen("R_ADDA_b50.txt", "w");
+				fprintf(file2, "{");
+				for(size_t j=0;j<block_size_var;j++) {
+					fprintf(file2, "{");
+					for(size_t i=0;i<block_size_var;i++) {
+						fprintf(file2,"%.30f + %.30f*I", creal(R_Array[i][j]), cimag(R_Array[i][j]));
+						if(i != block_size_var-1) {
+							fprintf(file2, ", ");
+						}
+						else {
+							fprintf(file2, "}");
+						}
+					}
+					if(j != block_size_var-1) {
+						fprintf(file2, ",\n");
+					}
+					else {
+						fprintf(file2, "}");
+					}
+				}
+				fclose(file2);
 			}
 			// find the maximum norm:
 			for(size_t i=0;i<block_size_var;i++) {
