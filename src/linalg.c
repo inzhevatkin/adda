@@ -127,11 +127,18 @@ doublecomplex nDotProdSelf_conj(const doublecomplex * restrict a,TIME_TYPE *comm
 
 //======================================================================================================================
 
-void equate_matrices(doublecomplex ** a, doublecomplex ** b) {
-	for(size_t i=0;i<block_size_var;i++) {
-		// number of rows = local_nRows.
-		nCopy(a[i], b[i]);
+void equate_matrices(doublecomplex ** dest, doublecomplex ** src, size_t n) {
+	// number of rows = local_nRows
+	if(n==local_nRows) {
+		for(size_t i=0;i<block_size_var;i++) nCopy(dest[i], src[i]);
 	}
+	// number of rows = block_size_var
+	else if(n==block_size_var) {
+		for(size_t i=0;i<block_size_var;i++) {
+			for(size_t j=0;j<block_size_var;j++) dest[i][j]=src[i][j];
+		}
+	}
+	else fprintf(logfile,"Equate_matrices() error. Output info != 0. \n");
 }
 
 void inv(doublecomplex ** ro){
@@ -402,13 +409,27 @@ void mTAm(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b)
 void aTb(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, TIME_TYPE *comm_timing)
 // res - block_size_var*block_size_var matrix
 {
-	for (size_t j=0;j<block_size_var;j++) { // column of a
-		for (size_t k=0;k<block_size_var;k++) { // column of b
+	size_t j,k;
+	for (j=0;j<block_size_var;j++) { // column of a
+		for (k=0;k<block_size_var;k++) { // column of b
 			res[k][j]=nDotProd_conj(a[j],b[k],comm_timing);
 		}
 	}
 }
 
+void aTb2(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b)
+// res - block_size_var*block_size_var matrix
+{
+	size_t j,k,i;
+	doublecomplex sum;
+	for (j=0;j<block_size_var;j++) { // column of a
+		for (k=0;k<block_size_var;k++) { // column of b
+			sum=0;
+			for (i=0;i<block_size_var;i++) sum+=a[j][i]*b[k][i];
+			res[k][j]=sum;
+		}
+	}
+}
 
 void X_new(doublecomplex ** res, doublecomplex ** p_old, doublecomplex ** alfa)
 // x_new=x_old+p_old*alfa
@@ -455,13 +476,14 @@ void P_new(doublecomplex ** res, doublecomplex ** r_new, doublecomplex ** p_old,
 	}
 }
 
-double find_max(void) {
+double find_max(doublecomplex **a, size_t n) {
 	double sum_cur;
 	double sum_max=0;
-	for(size_t i=0;i<block_size_var;i++){
+	size_t i,j;
+	for(i=0;i<block_size_var;i++){
 		sum_cur=0;
-		for(size_t j=0;j<local_nRows;j++){
-			sum_cur += cAbs2(rvecArray[i][j]);
+		for(j=0;j<n;j++){
+			sum_cur += cAbs2(a[i][j]);
 		}
 		if(sum_max<sum_cur) sum_max=sum_cur;
 	}

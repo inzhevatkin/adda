@@ -108,6 +108,7 @@ static doublecomplex dumb ATT_UNUSED; // dumb variable, used in workaround for i
 ITER_FUNC(BCGS2);
 ITER_FUNC(BiCG_CS);
 ITER_FUNC(BiCGBlock);
+ITER_FUNC(COCGrQ);
 ITER_FUNC(BiCGStab);
 ITER_FUNC(CGNR);
 ITER_FUNC(CSYM);
@@ -122,6 +123,7 @@ static const struct iter_params_struct params[]={
 	{IT_BCGS2,15000,2,1,BCGS2},
 	{IT_BICG_CS,50000,1,0,BiCG_CS},
 	{IT_BICG_BLOCK,50000,1,0,BiCGBlock},
+	{IT_COCGrQ,50000,1,0,COCGrQ},
 	{IT_BICGSTAB,30000,3,3,BiCGStab},
 	{IT_CGNR,10,1,0,CGNR},
 	{IT_CSYM,10,6,2,CSYM},
@@ -765,10 +767,7 @@ ITER_FUNC(BiCGBlock)
  * R.W. Freund "Conjugate gradient-type methods for linear systems with complex symmetric coefficient matrices" (1992).
  */
 {
-#define EPS1 1E-10 // for (rT.r)/(r.r)
-#define EPS2 1E-10 // for (pT.A.p)/(rT.r)
 	static doublecomplex ro_old;
-
 	switch (ph) {
 		case PHASE_VARS:
 			scalars[0].ptr=&ro_old;
@@ -779,10 +778,6 @@ ITER_FUNC(BiCGBlock)
 		case PHASE_ITER:
 			Dz("Current iteration: "GFORM_DEBUG,(double)niter);
 			if (niter==1) {
-				// hypothesis: rvecArray = B
-				// QR(rvecArray, R, local_nRows, block_size_var);
-				// rvecArray = Q
-				// equate_matrices(pvecArray, rvecArray);
 			}
 			else {
 				// output of multiplication pTp, rTr
@@ -793,10 +788,9 @@ ITER_FUNC(BiCGBlock)
 			// alfa=(pT.A.p)^-1.(rT.r)
 			// s=block_size_var
 			for(size_t j=0;j<block_size_var;j++){
-				MatVec_wrapper(pvecArray[j],AvecbufferArray[j],NULL,false,&Timing_OneIterMVP,&Timing_OneIterMVPComm);
+				MatVec_wrapper(pvecArray[j],AvecbufferArray[j],NULL,false,&Timing_OneIterMVP,&Timing_OneIterMVPComm); // AvecbufferArray=A.p
 			}
-			aTb(po_Matx, pvecArray, AvecbufferArray, &Timing_OneIterComm); // AvecbufferArray=A.p
-
+			aTb(po_Matx, pvecArray, AvecbufferArray, &Timing_OneIterComm);
 			// use one array for po, po^-1
 			inv(po_Matx);// s*s
 			aTb(ro_Matx, rvecArray, rvecArray, &Timing_OneIterComm); // s*s
@@ -820,15 +814,82 @@ ITER_FUNC(BiCGBlock)
 			vector_new(pvecArray, rvecArray, pvecArray, beta_Matx, 1);
 
 			// find the maximum |r_k+1|^2:
-			inprodRp1=find_max();
+			inprodRp1=find_max(rvecArray, local_nRows);
 
 			return; // end of PHASE_ITER
 	}
 	LogError(ONE_POS,"Unknown phase (%d) of the iterative solver",(int)ph);
 }
-#undef EPS1
-#undef EPS2
 
+//======================================================================================================================
+ITER_FUNC(COCGrQ)
+/* Block conjugate gradient for complex symmetric systems with QR-decomposition, based on:
+ * Y. Futamura et al. "A REAL-VALUED BLOCK CONJUGATE GRADIENT TYPE METHOD FOR SOLVING COMPLEX SYMMETRIC LINEAR SYSTEMS
+ * WITH MULTIPLE RIGHT-HAND SIDES" (2017).
+ * There is an error in the pseudocode of COCGrQ: p.354, line 6. Corrected: Q.ro=qr(Q-A.P.alfa).
+ */
+{
+	static doublecomplex ro_old;
+	switch (ph) {
+		case PHASE_VARS:
+			scalars[0].ptr=&ro_old;
+			scalars[0].size=sizeof(doublecomplex);
+			return;
+		case PHASE_INIT:
+			return; // no specific initialization required
+		case PHASE_ITER:
+			Dz("Current iteration: "GFORM_DEBUG,(double)niter);
+			if (niter==1) {
+				QR(pvecArray, delta_Array, local_nRows, block_size_var);
+				equate_matrices(zArray, pvecArray, local_nRows);
+				equate_matrices(Q_Array, pvecArray, local_nRows);
+			}
+			else {
+				equate_matrices(Q_Array, Q_Array_new, local_nRows);
+				equate_matrices(delta_Array, delta_Array_new, block_size_var);
+			}
+			//--------------------------------------------------------------------------------------//
+			// alfa=(pT.A.p)^-1.(QT.z)
+			// s=block_size_var
+			for(size_t j=0;j<block_size_var;j++){
+				MatVec_wrapper(pvecArray[j],AvecbufferArray[j],NULL,false,&Timing_OneIterMVP,&Timing_OneIterMVPComm); // AvecbufferArray=A.p
+			}
+			aTb(po_Matx, pvecArray, AvecbufferArray, &Timing_OneIterComm); // AvecbufferArray=A.p
+			// use one array for po, po^-1
+			inv(po_Matx);// s*s
+			aTb(ro_Matx, Q_Array, zArray, &Timing_OneIterComm); // ro_Matx=QT.z
+			matrix_mult(alfa_Matx, po_Matx, ro_Matx, block_size_var, block_size_var);
+			fprintf(logfile,"alfa = %f + %f*I\n", creal(alfa_Matx[0][0]), cimag(alfa_Matx[0][0]));
+			//--------------------------------------------------------------------------------------//
+			// x_new=x_old+p_old.alfa.delta
+			// use one array for x_old, x_new.
+			matrix_mult(alfa_delta, alfa_Matx, delta_Array, block_size_var, block_size_var); // alfa.delta
+			vector_new(xvecArray, xvecArray, pvecArray, alfa_delta, 1);
+			//--------------------------------------------------------------------------------------//
+			// Q.ro=qr(Q-A.P.alfa)
+			vector_new(Q_Array_new, Q_Array, AvecbufferArray, alfa_Matx, -1);
+			QR(Q_Array_new, R_Array_new, local_nRows, block_size_var);
+			matrix_mult(delta_Array_new, R_Array_new, delta_Array, block_size_var, block_size_var); // delta_new=ro_new.delta
+			equate_matrices(zArray, Q_Array_new, local_nRows); //znew=Qnew
+			//--------------------------------------------------------------------------------------//
+			inv(ro_Matx); // (QT.z)^(-1)
+			fprintf(logfile,"ro_Matx = %f + %f*I\n", creal(ro_Matx[0][0]), cimag(ro_Matx[0][0]));
+			aTb(ro_new_Matx, Q_Array_new, zArray, &Timing_OneIterComm); // ro_new=QnewT.znew
+			fprintf(logfile,"ro_new_Matx = %f + %f*I\n", creal(ro_new_Matx[0][0]), cimag(ro_new_Matx[0][0]));
+			aTb2(roQz, R_Array_new, ro_new_Matx); // roQz=(R_Array_new)T.ro_new
+			matrix_mult(beta_Matx, ro_Matx, roQz, block_size_var, block_size_var); // beta=ro.roQz
+			fprintf(logfile,"beta = %f + %f*I\n", creal(beta_Matx[0][0]), cimag(beta_Matx[0][0]));
+			//--------------------------------------------------------------------------------------//
+			// p_new=z_new+p.beta
+			vector_new(pvecArray, zArray, pvecArray, beta_Matx, 1); // p_new
+			//--------------------------------------------------------------------------------------//
+			// find the maximum |delta_k+1|^2:
+			inprodRp1=find_max(delta_Array_new, block_size_var);
+			return; // end of PHASE_ITER
+	}
+	LogError(ONE_POS,"Unknown phase (%d) of the iterative solver",(int)ph);
+
+}
 //======================================================================================================================
 
 ITER_FUNC(CGNR)
@@ -1478,7 +1539,7 @@ static const char *CalcInitField(double zero_resid,const enum incpol which)
 			}
 		case IF_ZERO:
 			// So far made support IT_BICG_BLOCK only for this case
-			if (IterMethod==IT_BICG_BLOCK) {
+			if (IterMethod==IT_BICG_BLOCK || IterMethod==IT_COCGrQ) {
 				for(size_t i=0;i<block_size_var;i++) {
 					nInit(xvecArray[i]); // x_0=0
 					for(size_t j=0;j<local_nRows;j++) {
@@ -1541,7 +1602,7 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 	tstart=GET_TIME();
 	matvec_ready=false; // can be set to true only in CalcInitField (if !load_chpoint)
 	if (!load_chpoint) {
-		if (IterMethod==IT_BICG_BLOCK) {
+		if (IterMethod==IT_BICG_BLOCK || IterMethod==IT_COCGrQ) {
 			for(size_t i=0;i<block_size_var;i++) {
 				nMult_mat(pvecArray[i],EincArray[i],cc_sqrt);
 			}
@@ -1644,12 +1705,12 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 			// find the maximum norm:
 			for(size_t i=0;i<block_size_var;i++) {
 				loc_temp=nNorm2(pvecArray[i],&Timing_InitIterComm);
-				fprintf(logfile,"squared norm = %.10f\n", loc_temp);
+				fprintf(logfile,"squared norm of B (Q) in the A.X=B: %.10f\n", loc_temp);
 				if (loc_temp > temp) {
 					temp = loc_temp;
 				}
 			}
-			fprintf(logfile,"max squared norm = %.10f\n", temp);
+			fprintf(logfile,"max squared norm of B (Q) in the A.X=B: %.10f\n", temp);
 		}
 		else {
 			nMult_mat(pvec,Einc,cc_sqrt);
@@ -1746,7 +1807,7 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 		else if (counter>params[ind_m].mc) LogError(ONE_POS,"Residual norm haven't decreased for maximum allowed "
 			"number of iterations (%d)",params[ind_m].mc);
 	}
-	if (IterMethod==IT_BICG_BLOCK) {
+	if (IterMethod==IT_BICG_BLOCK || IterMethod==IT_COCGrQ) {
 		if(qr_decomposition) {
 			// find the original unknown x
 			// make a copy of x
@@ -1764,14 +1825,17 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 		prop[0]=0;
 		prop[1]=0;
 		prop[2]=1;
-	}
-	if (recalc_resid) { // compute and print final residual norm
-		inprodR=ResidualNorm2(xvec,rvec,Avecbuffer,&Timing_MVP,&Timing_MVPComm,&Timing_IntFieldOneComm);
-		if (IFROOT) {
-			temp=sqrt(resid_scale*inprodR);
-			SnprintfErr(ONE_POS,tmp_str,MAX_LINE,"Final (recalculated) residual norm: "EFORM"\n",temp);
-			if (!orient_avg) fprintf(logfile,"%s",tmp_str);
-			printf("%s",tmp_str);
+
+		if (recalc_resid) { // compute and print final residual norm
+			for(size_t i=0;i<block_size_var;i++) {
+				inprodR=ResidualNorm2(xvecArray[i],rvecArray[i],Avecbuffer,&Timing_MVP,&Timing_MVPComm,&Timing_IntFieldOneComm);
+				if (IFROOT) {
+					temp=sqrt(resid_scale*inprodR);
+					SnprintfErr(ONE_POS,tmp_str,MAX_LINE,"Block %d, final (recalculated) residual norm: "EFORM"\n",(int)i,temp);
+					if (!orient_avg) fprintf(logfile,"%s",tmp_str);
+					printf("%s",tmp_str);
+				}
+			}
 		}
 	}
 	// post-processing

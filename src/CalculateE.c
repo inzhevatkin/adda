@@ -862,7 +862,7 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 	// calculate the incident field Einc; vector b=Einc*cc_sqrt
 	D("Generating B");
 	D("GenerateB start");
-	if (IterMethod==IT_BICG_BLOCK) {
+	if (IterMethod==IT_BICG_BLOCK || IterMethod==IT_COCGrQ) {
 		for(size_t i=0;i<block_size_var;i++) {
 			teta+=dt;
 			fi+=dfi;

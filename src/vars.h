@@ -112,30 +112,43 @@ extern int * restrict position_full;
 
 #endif // __vars_h
 
-// the first index of the arrays is a column, the second is a row
-doublecomplex **xvecArray; // n*s
-doublecomplex **rvecArray; // n*s
-doublecomplex **rMult;
-doublecomplex **pvecArray; // n*s
-doublecomplex **pMult;
-doublecomplex **ro_Matx; // s*s
-doublecomplex **ro_new_Matx; // s*s
-doublecomplex **po_Matx; // s*s
 doublecomplex **po_new_Matx; // s*s
-doublecomplex **beta_Matx; // s*s
-doublecomplex **alfa_Matx; // s*s
 doublecomplex **pvec_koeff; // used to hold the result of pvec-alfa/beta product. n*s
-
 doublecomplex **EincArray;    // EincArray[i][j], i - column, j - row. n*s
-doublecomplex **AvecbufferArray; // used to hold the result of matrix-vector products,
-								 // similar to non-block algorithm.
-								 // n*s
+
 doublecomplex *inv_auxiliary;
 doublecomplex *mutrix_mult_B_auxiliary;
 doublecomplex *mutrix_mult_C_auxiliary;
-
 doublecomplex ** a_matrix;
 
 // for QR-decomposition:
+doublecomplex **Q_Array; // n*s
 doublecomplex **R_Array; // s*s
 doublecomplex **B_copy; // n*s
+
+// for BiCGBlock
+// the first index of the arrays is a column, the second is a row
+doublecomplex **rvecArray; // n*s
+doublecomplex **rMult;
+doublecomplex **pMult;
+doublecomplex **alfa_Matx; // s*s
+doublecomplex **ro_new_Matx; // s*s
+
+// for COCGrQ
+doublecomplex **zArray;
+doublecomplex **alfa_delta;
+doublecomplex **Q_Array_new;
+doublecomplex **R_Array_new; // s*s
+doublecomplex **delta_Array; // s*s
+doublecomplex **delta_Array_new;
+doublecomplex **roQz; // s*s
+
+// for both
+doublecomplex **AvecbufferArray; // used to hold the result of matrix-vector products,
+								 // similar to non-block algorithm.
+								 // n*s
+doublecomplex **ro_Matx; // s*s
+doublecomplex **po_Matx; // s*s
+doublecomplex **xvecArray; // n*s
+doublecomplex **pvecArray; // n*s
+doublecomplex **beta_Matx; // s*s
