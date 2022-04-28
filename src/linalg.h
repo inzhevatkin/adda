@@ -78,7 +78,7 @@ bool QR_first_check(doublecomplex ** Q_, doublecomplex ** R_, doublecomplex ** A
 bool QR_second_check(doublecomplex ** Q_, size_t rows, size_t columns, double thresh);
 void matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t rows, size_t columns);
 void matrix_mult_sq(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t size);
-void equate_matrices(doublecomplex ** dest, doublecomplex ** src, size_t n);
+void equate_matrices(doublecomplex ** dest, doublecomplex ** src, size_t rows_num);
 void mTm(doublecomplex ** res, doublecomplex ** a);
 void mTAm(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b);
 void aTb(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, TIME_TYPE *comm_timing);

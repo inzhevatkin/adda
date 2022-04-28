@@ -67,7 +67,7 @@ extern unsigned char * restrict material;
 // iterative solver
 extern enum iter IterMethod;
 extern int maxiter;
-extern doublecomplex *xvec,*pvec,* restrict Einc;
+extern doublecomplex *xvec,*pvec,* restrict Einc,** restrict EincArray;
 
 // scattering at different angles
 extern int nTheta;
@@ -114,7 +114,6 @@ extern int * restrict position_full;
 
 doublecomplex **po_new_Matx; // s*s
 doublecomplex **pvec_koeff; // used to hold the result of pvec-alfa/beta product. n*s
-doublecomplex **EincArray;    // EincArray[i][j], i - column, j - row. n*s
 
 doublecomplex *inv_auxiliary;
 doublecomplex *mutrix_mult_B_auxiliary;
@@ -126,13 +125,9 @@ doublecomplex **Q_Array; // n*s
 doublecomplex **R_Array; // s*s
 doublecomplex **B_copy; // n*s
 
-// for BiCGBlock
+
 // the first index of the arrays is a column, the second is a row
-doublecomplex **rvecArray; // n*s
-doublecomplex **rMult;
-doublecomplex **pMult;
-doublecomplex **alfa_Matx; // s*s
-doublecomplex **ro_new_Matx; // s*s
+
 
 // for COCGrQ
 doublecomplex **zArray;
@@ -143,12 +138,15 @@ doublecomplex **delta_Array; // s*s
 doublecomplex **delta_Array_new;
 doublecomplex **roQz; // s*s
 
-// for both
+// for BiCGBlock and COCGrQ
 doublecomplex **AvecbufferArray; // used to hold the result of matrix-vector products,
 								 // similar to non-block algorithm.
 								 // n*s
 doublecomplex **ro_Matx; // s*s
+doublecomplex **ro_new_Matx; // s*s
 doublecomplex **po_Matx; // s*s
 doublecomplex **xvecArray; // n*s
 doublecomplex **pvecArray; // n*s
+doublecomplex **rvecArray; // n*s
+doublecomplex **alfa_Matx; // s*s
 doublecomplex **beta_Matx; // s*s

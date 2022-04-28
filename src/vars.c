@@ -90,6 +90,8 @@ int maxiter;          // maximum number of iterations
 doublecomplex *xvec;  // total electric field on the dipoles
 doublecomplex *pvec;  // polarization of dipoles, also an auxiliary vector in iterative solvers
 doublecomplex * restrict Einc;    // incident field on dipoles
+doublecomplex ** restrict EincArray;    // incident field on dipoles for block algorithm
+										// EincArray[i][j], i - column, j - row.
 
 // scattering at different angles
 int nTheta;                        // number of angles in scattering profile

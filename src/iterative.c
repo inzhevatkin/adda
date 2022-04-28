@@ -343,7 +343,7 @@ static void ProgressReport(void)
 //======================================================================================================================
 
 static double ResidualNorm2(doublecomplex * restrict x,doublecomplex * restrict r,doublecomplex * restrict buffer,
-	TIME_TYPE *mvp_timing,TIME_TYPE *mvp_comm_timing,TIME_TYPE *comm_timing)
+		doublecomplex * Einc_cur, TIME_TYPE *mvp_timing,TIME_TYPE *mvp_comm_timing,TIME_TYPE *comm_timing)
 /* Computes ||Ax-b||^2, where b=sqrt(C).Einc; buffer is used for Ax, r contains Ax-b at the end; comm_timing is
  * incremented with communication time. If only the norm is required, the calculation can be done without using vector
  * r, but this does not make a lot of sense, since memory is allocated anyway.
@@ -355,7 +355,7 @@ static double ResidualNorm2(doublecomplex * restrict x,doublecomplex * restrict 
 	MatVec(x,buffer,NULL,false,mvp_timing,&mc_time);
 	(*mvp_comm_timing) += mc_time;
 	(*comm_timing) += mc_time;
-	nMult_mat(r,Einc,cc_sqrt);
+	nMult_mat(r,Einc_cur,cc_sqrt);
 	nDecrem(r,buffer,&res,comm_timing);
 	return res;
 }
@@ -777,13 +777,6 @@ ITER_FUNC(BiCGBlock)
 			return; // no specific initialization required
 		case PHASE_ITER:
 			Dz("Current iteration: "GFORM_DEBUG,(double)niter);
-			if (niter==1) {
-			}
-			else {
-				// output of multiplication pTp, rTr
-				aTb(pMult, pvecArray, pvecArray, &Timing_OneIterComm); // s*s
-				aTb(rMult, rvecArray, rvecArray, &Timing_OneIterComm); // s*s
-			}
 			//--------------------------------------------------------------------------------------//
 			// alfa=(pT.A.p)^-1.(rT.r)
 			// s=block_size_var
@@ -851,9 +844,8 @@ ITER_FUNC(COCGrQ)
 			//--------------------------------------------------------------------------------------//
 			// alfa=(pT.A.p)^-1.(QT.z)
 			// s=block_size_var
-			for(size_t j=0;j<block_size_var;j++){
+			for(size_t j=0;j<block_size_var;j++)
 				MatVec_wrapper(pvecArray[j],AvecbufferArray[j],NULL,false,&Timing_OneIterMVP,&Timing_OneIterMVPComm); // AvecbufferArray=A.p
-			}
 			aTb(po_Matx, pvecArray, AvecbufferArray, &Timing_OneIterComm); // AvecbufferArray=A.p
 			// use one array for po, po^-1
 			inv(po_Matx);// s*s
@@ -1603,15 +1595,9 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 	matvec_ready=false; // can be set to true only in CalcInitField (if !load_chpoint)
 	if (!load_chpoint) {
 		if (IterMethod==IT_BICG_BLOCK || IterMethod==IT_COCGrQ) {
-			for(size_t i=0;i<block_size_var;i++) {
-				nMult_mat(pvecArray[i],EincArray[i],cc_sqrt);
-			}
+			for(size_t i=0;i<block_size_var;i++) nMult_mat(pvecArray[i],EincArray[i],cc_sqrt);
 			// make a copy of the right side
-			for(size_t i=0;i<block_size_var;i++) {
-				for(size_t j=0;j<local_nRows;j++) {
-					B_copy[i][j]=pvecArray[i][j];
-				}
-			}
+			for(size_t i=0;i<block_size_var;i++) for(size_t j=0;j<local_nRows;j++) B_copy[i][j]=pvecArray[i][j];
 			if(flag_output) {
 				// Output B matrix:
 				FILE *file;
@@ -1621,19 +1607,11 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 					fprintf(file, "{");
 					for(size_t i=0;i<block_size_var;i++) {
 						fprintf(file,"%.30f + %.30f*I", creal(pvecArray[i][j]), cimag(pvecArray[i][j]));
-						if(i != block_size_var-1) {
-							fprintf(file, ", ");
-						}
-						else {
-							fprintf(file, "}");
-						}
+						if(i != block_size_var-1) fprintf(file, ", ");
+						else fprintf(file, "}");
 					}
-					if(j != local_nRows-1) {
-						fprintf(file, ",\n");
-					}
-					else {
-						fprintf(file, "}");
-					}
+					if(j != local_nRows-1) fprintf(file, ",\n");
+					else fprintf(file, "}");
 				}
 				fclose(file);
 			}
@@ -1641,17 +1619,17 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 			// find qr-decomposition of rvecArray
 			if(qr_decomposition) {
 				QR(pvecArray, R_Array, local_nRows, block_size_var);
-			// check: ||A-QR||/||A|| < threshold
-			double thresh = pow(10, -10);
-			if( QR_first_check(pvecArray, R_Array, B_copy, local_nRows, block_size_var, thresh) )
-				fprintf(logfile,"First QR test succeeded: ||A-QR||/||A|| < threshold \n");
-			else
-				fprintf(logfile,"First QR test failed: ||A-QR||/||A|| >= threshold \n");
+				// check: ||A-QR||/||A|| < threshold
+				double thresh = pow(10, -10);
+				if( QR_first_check(pvecArray, R_Array, B_copy, local_nRows, block_size_var, thresh) )
+					fprintf(logfile,"First QR test succeeded: ||A-QR||/||A|| < threshold \n");
+				else
+					fprintf(logfile,"First QR test failed: ||A-QR||/||A|| >= threshold \n");
 
-			if( QR_second_check(pvecArray, local_nRows, block_size_var, thresh) )
-				fprintf(logfile,"Second QR test succeeded: ||I-Q^HQ|| < threshold \n");
-			else
-				fprintf(logfile,"Second QR test failed: ||I-Q^HQ|| >= threshold \n");
+				if( QR_second_check(pvecArray, local_nRows, block_size_var, thresh) )
+					fprintf(logfile,"Second QR test succeeded: ||I-Q^HQ|| < threshold \n");
+				else
+					fprintf(logfile,"Second QR test failed: ||I-Q^HQ|| >= threshold \n");
 			}
 
 			if(flag_output) {
@@ -1663,19 +1641,11 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 					fprintf(file3, "{");
 					for(size_t i=0;i<block_size_var;i++) {
 						fprintf(file3,"%.30f + %.30f*I", creal(pvecArray[i][j]), cimag(pvecArray[i][j]));
-						if(i != block_size_var-1) {
-							fprintf(file3, ", ");
-						}
-						else {
-							fprintf(file3, "}");
-						}
+						if(i != block_size_var-1) fprintf(file3, ", ");
+						else fprintf(file3, "}");
 					}
-					if(j != local_nRows-1) {
-						fprintf(file3, ",\n");
-					}
-					else {
-						fprintf(file3, "}");
-					}
+					if(j != local_nRows-1) fprintf(file3, ",\n");
+					else fprintf(file3, "}");
 				}
 				fclose(file3);
 				// Output R matrix:
@@ -1686,19 +1656,11 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 					fprintf(file2, "{");
 					for(size_t i=0;i<block_size_var;i++) {
 						fprintf(file2,"%.30f + %.30f*I", creal(R_Array[i][j]), cimag(R_Array[i][j]));
-						if(i != block_size_var-1) {
-							fprintf(file2, ", ");
-						}
-						else {
-							fprintf(file2, "}");
-						}
+						if(i != block_size_var-1) fprintf(file2, ", ");
+						else fprintf(file2, "}");
 					}
-					if(j != block_size_var-1) {
-						fprintf(file2, ",\n");
-					}
-					else {
-						fprintf(file2, "}");
-					}
+					if(j != block_size_var-1) fprintf(file2, ",\n");
+					else fprintf(file2, "}");
 				}
 				fclose(file2);
 			}
@@ -1706,9 +1668,7 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 			for(size_t i=0;i<block_size_var;i++) {
 				loc_temp=nNorm2(pvecArray[i],&Timing_InitIterComm);
 				fprintf(logfile,"squared norm of B (Q) in the A.X=B: %.10f\n", loc_temp);
-				if (loc_temp > temp) {
-					temp = loc_temp;
-				}
+				if (loc_temp > temp) temp = loc_temp;
 			}
 			fprintf(logfile,"max squared norm of B (Q) in the A.X=B: %.10f\n", temp);
 		}
@@ -1828,7 +1788,7 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 
 		if (recalc_resid) { // compute and print final residual norm
 			for(size_t i=0;i<block_size_var;i++) {
-				inprodR=ResidualNorm2(xvecArray[i],rvecArray[i],Avecbuffer,&Timing_MVP,&Timing_MVPComm,&Timing_IntFieldOneComm);
+				inprodR=ResidualNorm2(xvecArray[i],rvecArray[i],Avecbuffer,EincArray[i],&Timing_MVP,&Timing_MVPComm,&Timing_IntFieldOneComm);
 				if (IFROOT) {
 					temp=sqrt(resid_scale*inprodR);
 					SnprintfErr(ONE_POS,tmp_str,MAX_LINE,"Block %d, final (recalculated) residual norm: "EFORM"\n",(int)i,temp);

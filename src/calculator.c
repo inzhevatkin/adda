@@ -705,6 +705,10 @@ static void AllocateEverything(void)
 		MALLOC_VECTOR(pvec,complex,local_nRows,ALL);
 		MALLOC_VECTOR(Einc,complex,local_nRows,ALL);
 		MALLOC_VECTOR(Avecbuffer,complex,local_nRows,ALL);
+		if(IterMethod==IT_BICG_BLOCK || IterMethod==IT_COCGrQ) {
+			EincArray=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
+			for(size_t i=0;i<block_size_var;i++) MALLOC_VECTOR(EincArray[i],complex,local_nRows,ALL);
+		}
 	}
 	memory+=5*tmp;
 #ifdef SPARSE
@@ -749,11 +753,8 @@ static void AllocateEverything(void)
 			memory+=2*tmp;
 			break;
 		case IT_BICG_BLOCK: case IT_COCGrQ:
-			EincArray=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
 			rvecArray=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			rMult=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
 			pvecArray=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			pMult=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
 			xvecArray=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
 			AvecbufferArray=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
 			pvec_koeff=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
@@ -784,11 +785,8 @@ static void AllocateEverything(void)
 			R_Array_new=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex));
 
 			for(size_t i=0;i<block_size_var;i++) {
-				EincArray[i]=malloc(local_nRows*sizeof(doublecomplex));
 				rvecArray[i]=malloc(local_nRows*sizeof(doublecomplex));
-				rMult[i]=malloc(local_nRows*sizeof(doublecomplex));
 				pvecArray[i]=malloc(local_nRows*sizeof(doublecomplex));
-				pMult[i]=malloc(local_nRows*sizeof(doublecomplex));
 				xvecArray[i]=malloc(local_nRows*sizeof(doublecomplex));
 				AvecbufferArray[i]=malloc(local_nRows*sizeof(doublecomplex));
 				pvec_koeff[i]=malloc(local_nRows*sizeof(doublecomplex));
@@ -956,8 +954,12 @@ void FreeEverything(void)
 	Free_cVector(xvec);
 	Free_cVector(rvec);
 	Free_cVector(pvec);
-	Free_cVector(Einc);
 	Free_cVector(Avecbuffer);
+	if(IterMethod==IT_BICG_BLOCK || IterMethod==IT_COCGrQ) {
+		for(size_t i=0;i<block_size_var;i++) Free_cVector(EincArray[i]);
+		free(EincArray);
+	}
+	Free_cVector(Einc);
 	
 	/* The following can be automated to some extent, either using the information from structure array 'params' in
 	 * iterative.c or checking each vector for being NULL. However, it will anyway require manual editing if additional
@@ -988,9 +990,7 @@ void FreeEverything(void)
 			for(size_t i=0;i<block_size_var;i++) {
 				free(xvecArray[i]);
 				free(rvecArray[i]);
-				free(rMult[i]);
 				free(pvecArray[i]);
-				free(pMult[i]);
 				free(ro_Matx[i]);
 				free(ro_new_Matx[i]);
 				free(po_Matx[i]);
@@ -998,7 +998,6 @@ void FreeEverything(void)
 				free(beta_Matx[i]);
 				free(alfa_Matx[i]);
 				free(pvec_koeff[i]);
-				free(EincArray[i]);
 				free(AvecbufferArray[i]);
 				free(a_matrix[i]);
 				// for qr-decomposition:
@@ -1016,9 +1015,7 @@ void FreeEverything(void)
 			}
 			free(xvecArray);
 			free(rvecArray);
-			free(rMult);
 			free(pvecArray);
-			free(pMult);
 			free(ro_Matx);
 			free(ro_new_Matx);
 			free(po_Matx);
@@ -1026,7 +1023,6 @@ void FreeEverything(void)
 			free(beta_Matx);
 			free(alfa_Matx);
 			free(pvec_koeff);
-			free(EincArray);
 			free(AvecbufferArray);
 			free(inv_auxiliary);
 			free(mutrix_mult_B_auxiliary);

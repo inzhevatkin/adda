@@ -127,17 +127,9 @@ doublecomplex nDotProdSelf_conj(const doublecomplex * restrict a,TIME_TYPE *comm
 
 //======================================================================================================================
 
-void equate_matrices(doublecomplex ** dest, doublecomplex ** src, size_t n) {
-	// number of rows = local_nRows
-	if(n==local_nRows) {
-		for(size_t i=0;i<block_size_var;i++) nCopy(dest[i], src[i]);
-	}
-	// number of rows = block_size_var
-	else if(n==block_size_var) {
-		for(size_t i=0;i<block_size_var;i++) {
-			for(size_t j=0;j<block_size_var;j++) dest[i][j]=src[i][j];
-		}
-	}
+void equate_matrices(doublecomplex ** dest, doublecomplex ** src, size_t rows_num) {
+	if(rows_num==local_nRows) for(size_t i=0;i<block_size_var;i++) nCopy(dest[i], src[i]);
+	else if(rows_num==block_size_var) for(size_t i=0;i<block_size_var;i++) for(size_t j=0;j<block_size_var;j++) dest[i][j]=src[i][j];
 	else fprintf(logfile,"Equate_matrices() error. Output info != 0. \n");
 }
 
@@ -145,7 +137,7 @@ void inv(doublecomplex ** ro){
 	size_t i, j, idx;
 	size_t N=block_size_var;
     for (i = 0; i != N; ++i) { //row
-        for (j = 0; j != N; ++j){ //column
+        for (j = 0; j != N; ++j) { //column
             idx = i*N + j;
             inv_auxiliary[idx] = ro[j][i]; //(MAT[i][j]).real() + _Complex_I*(MAT[i][j]).imag();
         }
@@ -480,11 +472,9 @@ double find_max(doublecomplex **a, size_t n) {
 	double sum_cur;
 	double sum_max=0;
 	size_t i,j;
-	for(i=0;i<block_size_var;i++){
+	for(i=0;i<block_size_var;i++) {
 		sum_cur=0;
-		for(j=0;j<n;j++){
-			sum_cur += cAbs2(a[i][j]);
-		}
+		for(j=0;j<n;j++) sum_cur+=cAbs2(a[i][j]);
 		if(sum_max<sum_cur) sum_max=sum_cur;
 	}
 	return sum_max;
