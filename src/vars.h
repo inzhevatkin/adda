@@ -126,10 +126,8 @@ doublecomplex **R_Array; // s*s
 doublecomplex **B_copy; // n*s
 
 
-// the first index of the arrays is a column, the second is a row
-
-
 // for COCGrQ
+// the first index of the arrays is a column, the second is a row
 doublecomplex **zArray;
 doublecomplex **alfa_delta;
 doublecomplex **Q_Array_new;

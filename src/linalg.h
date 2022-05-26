@@ -31,6 +31,7 @@ void nCopy(doublecomplex * restrict a,const doublecomplex * restrict b);
 double nNorm2(const doublecomplex * restrict a,TIME_TYPE *comm_timing);
 doublecomplex nDotProd(const doublecomplex * restrict a,const doublecomplex * restrict b,TIME_TYPE *comm_timing);
 doublecomplex nDotProd_conj(const doublecomplex * restrict a,const doublecomplex * restrict b,TIME_TYPE *comm_timing);
+doublecomplex xDotProd_conj(const doublecomplex * restrict a,const doublecomplex * restrict b,register const size_t n,TIME_TYPE *comm_timing);
 doublecomplex nDotProdSelf_conj(const doublecomplex * restrict a,TIME_TYPE *comm_timing);
 doublecomplex nDotProdSelf_conj_Norm2(const doublecomplex * restrict a,double * restrict norm,TIME_TYPE *comm_timing);
 void nIncrem110_cmplx(doublecomplex * restrict a,const doublecomplex * restrict b,const doublecomplex * restrict c,
@@ -76,12 +77,13 @@ void inv(doublecomplex ** ro);
 void QR(doublecomplex ** b, doublecomplex ** R, size_t rows, size_t columns);
 bool QR_first_check(doublecomplex ** Q_, doublecomplex ** R_, doublecomplex ** A_, size_t rows, size_t columns, double thresh);
 bool QR_second_check(doublecomplex ** Q_, size_t rows, size_t columns, double thresh);
-void matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t rows, size_t columns);
+void aTb(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, TIME_TYPE *comm_timing);
+void ab(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t rows, size_t columns);
+
 void matrix_mult_sq(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t size);
 void equate_matrices(doublecomplex ** dest, doublecomplex ** src, size_t rows_num);
 void mTm(doublecomplex ** res, doublecomplex ** a);
 void mTAm(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b);
-void aTb(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, TIME_TYPE *comm_timing);
 void aTb2(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b);
 void X_new(doublecomplex ** res, doublecomplex ** p_old, doublecomplex ** alfa);
 void R_new(doublecomplex ** res, doublecomplex ** r_old, doublecomplex ** Ap, doublecomplex ** alfa);

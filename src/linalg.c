@@ -109,6 +109,23 @@ doublecomplex nDotProd_conj(const doublecomplex * restrict a,const doublecomplex
 
 //======================================================================================================================
 
+doublecomplex xDotProd_conj(const doublecomplex * restrict a,const doublecomplex * restrict b,register const size_t n,TIME_TYPE *comm_timing)
+/* conjugate dot product of two large vectors; c=a.b*=b.a*; here the dot implies conjugation
+ * !!! a and b must not alias !!!
+ * vector size n is passed to the function
+ */
+{
+	register size_t i;
+	doublecomplex sum=0;
+
+	LARGE_LOOP;
+	for (i=0;i<n;i++) sum+=a[i]*b[i];
+	MyInnerProduct(&sum,cmplx_type,1,comm_timing);
+	return sum;
+}
+
+//======================================================================================================================
+
 doublecomplex nDotProdSelf_conj(const doublecomplex * restrict a,TIME_TYPE *comm_timing)
 // conjugate dot product of vector on itself; c=a.a*; here the dot implies conjugation
 {
@@ -339,15 +356,15 @@ void sq_matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b
 	doublecomplex BETA = 0.0;
 	const int LDC = (int)size;
 	cblas_zgemm(layout, TRANS, TRANS, M, N, K, &ALPHA, A, LDA, B, LDB, &BETA, C, LDC);
-	for (i = 0; i != size; ++i){ //row
-		for (j = 0; j != size; ++j){ //column
+	for (i = 0; i != size; ++i) { //row
+		for (j = 0; j != size; ++j) { //column
 			idx = i*size + j;
 			res[j][i] = C[idx];
 		}
 	}
 }
 
-void matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t rows, size_t columns){
+void ab(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t rows, size_t columns){
 	// It is impossible to use here already implemented functions of vector products,
 	// since these functions imply multiplication of vectors of size local_nRows.
 	doublecomplex sum;
@@ -403,9 +420,8 @@ void aTb(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, TIME_TYPE
 {
 	size_t j,k;
 	for (j=0;j<block_size_var;j++) { // column of a
-		for (k=0;k<block_size_var;k++) { // column of b
+		for (k=0;k<block_size_var;k++) // column of b
 			res[k][j]=nDotProd_conj(a[j],b[k],comm_timing);
-		}
 	}
 }
 
@@ -426,7 +442,7 @@ void aTb2(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b)
 void X_new(doublecomplex ** res, doublecomplex ** p_old, doublecomplex ** alfa)
 // x_new=x_old+p_old*alfa
 {
-	matrix_mult(pvec_koeff, p_old, alfa, local_nRows, block_size_var);
+	ab(pvec_koeff, p_old, alfa, local_nRows, block_size_var);
 	for (size_t j=0;j<block_size_var;j++) { //column
 		for (size_t k=0;k<local_nRows;k++) { //row
 			res[j][k]+=pvec_koeff[j][k];
@@ -437,7 +453,7 @@ void X_new(doublecomplex ** res, doublecomplex ** p_old, doublecomplex ** alfa)
 void R_new(doublecomplex ** res, doublecomplex ** r_old, doublecomplex ** Ap, doublecomplex ** alfa)
 //r_new=r_old - A*p_old*alfa
 {
-	matrix_mult(res, Ap, alfa, local_nRows, block_size_var);
+	ab(res, Ap, alfa, local_nRows, block_size_var);
 	for (size_t j=0;j<block_size_var;j++) {
 		for (size_t k=0;k<local_nRows;k++) {
 			res[j][k]=-res[j][k]+r_old[j][k];
@@ -448,7 +464,7 @@ void R_new(doublecomplex ** res, doublecomplex ** r_old, doublecomplex ** Ap, do
 void vector_new(doublecomplex ** res, doublecomplex ** a_old, doublecomplex ** b_old, doublecomplex ** koeff, int sign)
 // a_new=a_old+sign*b_old*koeff
 {
-	matrix_mult(pvec_koeff, b_old, koeff, local_nRows, block_size_var);
+	ab(pvec_koeff, b_old, koeff, local_nRows, block_size_var);
 	for (size_t j=0;j<block_size_var;j++) { //column
 		for (size_t k=0;k<local_nRows;k++) { //row
 			res[j][k]=a_old[j][k]+sign*pvec_koeff[j][k];
@@ -460,7 +476,7 @@ void P_new(doublecomplex ** res, doublecomplex ** r_new, doublecomplex ** p_old,
 // p_new=r_new+p_old*beta
 {
 	size_t j, k;
-	matrix_mult(pvec_koeff, p_old, beta, local_nRows, block_size_var);
+	ab(pvec_koeff, p_old, beta, local_nRows, block_size_var);
 	for (j=0;j<block_size_var;j++) {
 		for (k=0;k<local_nRows;k++) {
 			res[j][k]=r_new[j][k]+pvec_koeff[j][k];

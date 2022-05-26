@@ -783,11 +783,11 @@ ITER_FUNC(BiCGBlock)
 			for(size_t j=0;j<block_size_var;j++){
 				MatVec_wrapper(pvecArray[j],AvecbufferArray[j],NULL,false,&Timing_OneIterMVP,&Timing_OneIterMVPComm); // AvecbufferArray=A.p
 			}
-			aTb(po_Matx, pvecArray, AvecbufferArray, &Timing_OneIterComm);
+			aTb(po_Matx, pvecArray, AvecbufferArray, &Timing_OneIterComm); // pT.A.p
 			// use one array for po, po^-1
-			inv(po_Matx);// s*s
-			aTb(ro_Matx, rvecArray, rvecArray, &Timing_OneIterComm); // s*s
-			matrix_mult(alfa_Matx, po_Matx, ro_Matx, block_size_var, block_size_var);
+			inv(po_Matx); // (pT.A.p)^-1
+			aTb(ro_Matx, rvecArray, rvecArray, &Timing_OneIterComm); // rT.r
+			ab(alfa_Matx, po_Matx, ro_Matx, block_size_var, block_size_var); // (pT.A.p)^-1.(rT.r)
 			fprintf(logfile,"alfa = %f + %f*I\n", creal(alfa_Matx[0][0]), cimag(alfa_Matx[0][0]));
 			//--------------------------------------------------------------------------------------//
 			// x_new=x_old + p_old*alfa
@@ -802,7 +802,7 @@ ITER_FUNC(BiCGBlock)
 			inv(ro_Matx);
 			aTb(ro_new_Matx, rvecArray, rvecArray, &Timing_OneIterComm); // s*s
 			// beta_Matx=ro_old_Matx^(-1).ro_new_Matx
-			matrix_mult(beta_Matx, ro_Matx, ro_new_Matx, block_size_var, block_size_var);
+			ab(beta_Matx, ro_Matx, ro_new_Matx, block_size_var, block_size_var);
 			fprintf(logfile,"beta = %f + %f*I\n", creal(beta_Matx[0][0]), cimag(beta_Matx[0][0]));
 			vector_new(pvecArray, rvecArray, pvecArray, beta_Matx, 1);
 
@@ -850,18 +850,18 @@ ITER_FUNC(COCGrQ)
 			// use one array for po, po^-1
 			inv(po_Matx);// s*s
 			aTb(ro_Matx, Q_Array, zArray, &Timing_OneIterComm); // ro_Matx=QT.z
-			matrix_mult(alfa_Matx, po_Matx, ro_Matx, block_size_var, block_size_var);
+			ab(alfa_Matx, po_Matx, ro_Matx, block_size_var, block_size_var);
 			fprintf(logfile,"alfa = %f + %f*I\n", creal(alfa_Matx[0][0]), cimag(alfa_Matx[0][0]));
 			//--------------------------------------------------------------------------------------//
 			// x_new=x_old+p_old.alfa.delta
 			// use one array for x_old, x_new.
-			matrix_mult(alfa_delta, alfa_Matx, delta_Array, block_size_var, block_size_var); // alfa.delta
+			ab(alfa_delta, alfa_Matx, delta_Array, block_size_var, block_size_var); // alfa.delta
 			vector_new(xvecArray, xvecArray, pvecArray, alfa_delta, 1);
 			//--------------------------------------------------------------------------------------//
 			// Q.ro=qr(Q-A.P.alfa)
 			vector_new(Q_Array_new, Q_Array, AvecbufferArray, alfa_Matx, -1);
 			QR(Q_Array_new, R_Array_new, local_nRows, block_size_var);
-			matrix_mult(delta_Array_new, R_Array_new, delta_Array, block_size_var, block_size_var); // delta_new=ro_new.delta
+			ab(delta_Array_new, R_Array_new, delta_Array, block_size_var, block_size_var); // delta_new=ro_new.delta
 			equate_matrices(zArray, Q_Array_new, local_nRows); //znew=Qnew
 			//--------------------------------------------------------------------------------------//
 			inv(ro_Matx); // (QT.z)^(-1)
@@ -869,7 +869,7 @@ ITER_FUNC(COCGrQ)
 			aTb(ro_new_Matx, Q_Array_new, zArray, &Timing_OneIterComm); // ro_new=QnewT.znew
 			fprintf(logfile,"ro_new_Matx = %f + %f*I\n", creal(ro_new_Matx[0][0]), cimag(ro_new_Matx[0][0]));
 			aTb2(roQz, R_Array_new, ro_new_Matx); // roQz=(R_Array_new)T.ro_new
-			matrix_mult(beta_Matx, ro_Matx, roQz, block_size_var, block_size_var); // beta=ro.roQz
+			ab(beta_Matx, ro_Matx, roQz, block_size_var, block_size_var); // beta=ro.roQz
 			fprintf(logfile,"beta = %f + %f*I\n", creal(beta_Matx[0][0]), cimag(beta_Matx[0][0]));
 			//--------------------------------------------------------------------------------------//
 			// p_new=z_new+p.beta
@@ -1577,7 +1577,7 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 	double temp=0, loc_temp;
 	char tmp_str[MAX_LINE];
 	TIME_TYPE tstart,time_tmp,time_tmp2,time_tmp3;
-	bool flag_output=false;
+	bool flag_output=true;
 
 	// redundant initialization to remove warnings
 	time_tmp=time_tmp2=time_tmp3=0;
@@ -1601,7 +1601,7 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 			if(flag_output) {
 				// Output B matrix:
 				FILE *file;
-				file = fopen("B_ADDA_b50.txt", "w");
+				file = fopen("B_ADDA_b.txt", "w");
 				fprintf(file, "{");
 				for(size_t j=0;j<local_nRows;j++) {
 					fprintf(file, "{");
@@ -1635,7 +1635,7 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 			if(flag_output) {
 				// Output Q matrix:
 				FILE *file3;
-				file3 = fopen("Q_ADDA_b50.txt", "w");
+				file3 = fopen("Q_ADDA_b.txt", "w");
 				fprintf(file3, "{");
 				for(size_t j=0;j<local_nRows;j++) {
 					fprintf(file3, "{");
@@ -1650,7 +1650,7 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 				fclose(file3);
 				// Output R matrix:
 				FILE *file2;
-				file2 = fopen("R_ADDA_b50.txt", "w");
+				file2 = fopen("R_ADDA_b.txt", "w");
 				fprintf(file2, "{");
 				for(size_t j=0;j<block_size_var;j++) {
 					fprintf(file2, "{");
@@ -1776,7 +1776,7 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 					B_copy[i][j]=xvecArray[i][j];
 				}
 			}
-			matrix_mult(xvecArray, B_copy, R_Array, local_nRows, block_size_var);
+			ab(xvecArray, B_copy, R_Array, local_nRows, block_size_var);
 			temp=nNorm2(B_copy[0],&Timing_InitIterComm); //output only for the 0-block
 			resid_scale=1/temp;
 		}

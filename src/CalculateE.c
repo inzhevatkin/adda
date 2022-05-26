@@ -866,7 +866,7 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 		for(size_t i=0;i<block_size_var;i++) {
 			teta+=dt;
 			fi+=dfi;
-			//teta=(double)(PI/180)*rand()/RAND_MAX;
+			//teta=(double)(PI/180)*rand()/RAND_MAX; // this code for close incidence direction
 			//fi=(double)(PI/180)*rand()/RAND_MAX;
 			prop[0]=sin(teta)*cos(fi);
 			prop[1]=sin(teta)*sin(fi);
