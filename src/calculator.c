@@ -784,6 +784,8 @@ static void AllocateEverything(void)
 			B_copy=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
 			R_Array_new=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex));
 
+			IPIV=malloc(block_size_var*sizeof(int));
+
 			for(size_t i=0;i<block_size_var;i++) {
 				rvecArray[i]=malloc(local_nRows*sizeof(doublecomplex));
 				pvecArray[i]=malloc(local_nRows*sizeof(doublecomplex));
@@ -813,6 +815,11 @@ static void AllocateEverything(void)
 				delta_Array_new[i]=malloc(block_size_var*sizeof(doublecomplex));
 				roQz[i]=malloc(block_size_var*sizeof(doublecomplex));
 			}
+
+			// for BiCGBlock (1d arrays)
+			//pvecArr=(doublecomplex *)malloc(local_nRows*block_size_var*sizeof(doublecomplex));
+
+
 			break;
 	}
 	/* TO ADD NEW ITERATIVE SOLVER
@@ -1033,6 +1040,8 @@ void FreeEverything(void)
 			free(R_Array);
 			free(R_Array_new);
 			free(B_copy);
+			// for LAPACK calculation
+			free(IPIV);
 			// for COCGrQ:
 			free(zArray);
 			free(alfa_delta);

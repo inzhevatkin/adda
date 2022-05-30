@@ -767,7 +767,7 @@ ITER_FUNC(BiCGBlock)
  * R.W. Freund "Conjugate gradient-type methods for linear systems with complex symmetric coefficient matrices" (1992).
  */
 {
-	static doublecomplex ro_old;
+	static doublecomplex ro_old; // parameter may not be required?
 	switch (ph) {
 		case PHASE_VARS:
 			scalars[0].ptr=&ro_old;
@@ -779,36 +779,24 @@ ITER_FUNC(BiCGBlock)
 			Dz("Current iteration: "GFORM_DEBUG,(double)niter);
 			//--------------------------------------------------------------------------------------//
 			// alfa=(pT.A.p)^-1.(rT.r)
-			// s=block_size_var
-			for(size_t j=0;j<block_size_var;j++){
+			for(size_t j=0;j<block_size_var;j++)
 				MatVec_wrapper(pvecArray[j],AvecbufferArray[j],NULL,false,&Timing_OneIterMVP,&Timing_OneIterMVPComm); // AvecbufferArray=A.p
-			}
 			aTb(po_Matx, pvecArray, AvecbufferArray, &Timing_OneIterComm); // pT.A.p
-			// use one array for po, po^-1
-			inv(po_Matx); // (pT.A.p)^-1
-			aTb(ro_Matx, rvecArray, rvecArray, &Timing_OneIterComm); // rT.r
-			ab(alfa_Matx, po_Matx, ro_Matx, block_size_var, block_size_var); // (pT.A.p)^-1.(rT.r)
+			inv(po_Matx); // (pT.A.p)^-1 (we use one array for po, po^-1)
+			aTb(ro_Matx,rvecArray,rvecArray,&Timing_OneIterComm); // rT.r
+			ab(alfa_Matx,po_Matx,ro_Matx,block_size_var,block_size_var); // (pT.A.p)^-1.(rT.r)
 			fprintf(logfile,"alfa = %f + %f*I\n", creal(alfa_Matx[0][0]), cimag(alfa_Matx[0][0]));
 			//--------------------------------------------------------------------------------------//
-			// x_new=x_old + p_old*alfa
-			// use one array for x_old, x_new.
-			vector_new(xvecArray, xvecArray, pvecArray, alfa_Matx, 1);
-
-			//r_new=r_old - A*p_old*alfa
-			vector_new(rvecArray, rvecArray, AvecbufferArray, alfa_Matx, -1);
-
-			// ro_old_Matx^-1
-			// use one array for ro, ro^-1
-			inv(ro_Matx);
-			aTb(ro_new_Matx, rvecArray, rvecArray, &Timing_OneIterComm); // s*s
-			// beta_Matx=ro_old_Matx^(-1).ro_new_Matx
-			ab(beta_Matx, ro_Matx, ro_new_Matx, block_size_var, block_size_var);
+			vector_new(xvecArray,xvecArray,pvecArray,alfa_Matx,1); // x_new=x_old+p_old.alfa (we use one array for x_old, x_new)
+			vector_new(rvecArray,rvecArray,AvecbufferArray,alfa_Matx,-1); // r_new=r_old-A.p_old.alfa (we use one array for r_old, r_new)
+			//--------------------------------------------------------------------------------------//
+			inv(ro_Matx); // (rT.r)^-1 (we use one array for ro, ro^-1)
+			aTb(ro_new_Matx,rvecArray,rvecArray,&Timing_OneIterComm);
+			ab(beta_Matx,ro_Matx,ro_new_Matx,block_size_var,block_size_var); // beta_Matx=ro_old_Matx^(-1).ro_new_Matx
 			fprintf(logfile,"beta = %f + %f*I\n", creal(beta_Matx[0][0]), cimag(beta_Matx[0][0]));
-			vector_new(pvecArray, rvecArray, pvecArray, beta_Matx, 1);
-
-			// find the maximum |r_k+1|^2:
-			inprodRp1=find_max(rvecArray, local_nRows);
-
+			vector_new(pvecArray,rvecArray,pvecArray,beta_Matx,1); //p_new=r_new+p.beta
+			//--------------------------------------------------------------------------------------//
+			inprodRp1=find_max(rvecArray);// find the maximum |r_k+1|^2:
 			return; // end of PHASE_ITER
 	}
 	LogError(ONE_POS,"Unknown phase (%d) of the iterative solver",(int)ph);
@@ -843,18 +831,16 @@ ITER_FUNC(COCGrQ)
 			}
 			//--------------------------------------------------------------------------------------//
 			// alfa=(pT.A.p)^-1.(QT.z)
-			// s=block_size_var
 			for(size_t j=0;j<block_size_var;j++)
 				MatVec_wrapper(pvecArray[j],AvecbufferArray[j],NULL,false,&Timing_OneIterMVP,&Timing_OneIterMVPComm); // AvecbufferArray=A.p
 			aTb(po_Matx, pvecArray, AvecbufferArray, &Timing_OneIterComm); // AvecbufferArray=A.p
 			// use one array for po, po^-1
-			inv(po_Matx);// s*s
+			inv(po_Matx);
 			aTb(ro_Matx, Q_Array, zArray, &Timing_OneIterComm); // ro_Matx=QT.z
 			ab(alfa_Matx, po_Matx, ro_Matx, block_size_var, block_size_var);
 			fprintf(logfile,"alfa = %f + %f*I\n", creal(alfa_Matx[0][0]), cimag(alfa_Matx[0][0]));
 			//--------------------------------------------------------------------------------------//
-			// x_new=x_old+p_old.alfa.delta
-			// use one array for x_old, x_new.
+			// x_new=x_old+p_old.alfa.delta (we use one array for x_old, x_new)
 			ab(alfa_delta, alfa_Matx, delta_Array, block_size_var, block_size_var); // alfa.delta
 			vector_new(xvecArray, xvecArray, pvecArray, alfa_delta, 1);
 			//--------------------------------------------------------------------------------------//
@@ -872,11 +858,10 @@ ITER_FUNC(COCGrQ)
 			ab(beta_Matx, ro_Matx, roQz, block_size_var, block_size_var); // beta=ro.roQz
 			fprintf(logfile,"beta = %f + %f*I\n", creal(beta_Matx[0][0]), cimag(beta_Matx[0][0]));
 			//--------------------------------------------------------------------------------------//
-			// p_new=z_new+p.beta
-			vector_new(pvecArray, zArray, pvecArray, beta_Matx, 1); // p_new
+			vector_new(pvecArray, zArray, pvecArray, beta_Matx, 1); // p_new=z_new+p.beta
 			//--------------------------------------------------------------------------------------//
-			// find the maximum |delta_k+1|^2:
-			inprodRp1=find_max(delta_Array_new, block_size_var);
+			ab(rvecArray, Q_Array_new, delta_Array_new, local_nRows, block_size_var); // r=Q.delta
+			inprodRp1=find_max(rvecArray); // find the maximum |r[i]|^2
 			return; // end of PHASE_ITER
 	}
 	LogError(ONE_POS,"Unknown phase (%d) of the iterative solver",(int)ph);

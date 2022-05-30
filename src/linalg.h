@@ -89,7 +89,7 @@ void X_new(doublecomplex ** res, doublecomplex ** p_old, doublecomplex ** alfa);
 void R_new(doublecomplex ** res, doublecomplex ** r_old, doublecomplex ** Ap, doublecomplex ** alfa);
 void P_new(doublecomplex ** res, doublecomplex ** r_new, doublecomplex ** p_old, doublecomplex ** beta);
 void vector_new(doublecomplex ** res, doublecomplex ** a_old, doublecomplex ** b_old, doublecomplex ** k, int sign);
-double find_max(doublecomplex **a, size_t n);
+double find_max(doublecomplex **a);
 void sq_matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b);
 
 

@@ -125,6 +125,8 @@ doublecomplex **Q_Array; // n*s
 doublecomplex **R_Array; // s*s
 doublecomplex **B_copy; // n*s
 
+int* IPIV; // for LAPACK calculations
+
 
 // for COCGrQ
 // the first index of the arrays is a column, the second is a row
