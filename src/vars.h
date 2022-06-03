@@ -112,13 +112,11 @@ extern int * restrict position_full;
 
 #endif // __vars_h
 
-doublecomplex **po_new_Matx; // s*s
 doublecomplex **pvec_koeff; // used to hold the result of pvec-alfa/beta product. n*s
 
 doublecomplex *inv_auxiliary;
 doublecomplex *mutrix_mult_B_auxiliary;
 doublecomplex *mutrix_mult_C_auxiliary;
-doublecomplex ** a_matrix;
 
 // for QR-decomposition:
 doublecomplex **Q_Array; // n*s

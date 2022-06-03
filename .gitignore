@@ -120,3 +120,7 @@ src/seq/eels-block3/CrossSec-Y
 src/seq/eels-block3/log
 src/seq/eels-block3/mueller
 src/seq/block50-bicgblock/log
+src/seq/block50-bicgblock/CrossSec-Y
+src/seq/block50-bicgblock/mueller
+src/seq/FAR1DD5.tmp
+src/seq/FAR1DD6.tmp
