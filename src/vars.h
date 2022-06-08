@@ -113,8 +113,6 @@ extern int * restrict position_full;
 #endif // __vars_h
 
 doublecomplex **pvec_koeff; // used to hold the result of pvec-alfa/beta product. n*s
-
-doublecomplex *inv_auxiliary;
 doublecomplex *mutrix_mult_B_auxiliary;
 doublecomplex *mutrix_mult_C_auxiliary;
 
@@ -124,7 +122,6 @@ doublecomplex **R_Array; // s*s
 doublecomplex **B_copy; // n*s
 
 int* IPIV; // for LAPACK calculations
-
 
 // for COCGrQ
 // the first index of the arrays is a column, the second is a row

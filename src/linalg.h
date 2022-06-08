@@ -80,17 +80,13 @@ bool QR_second_check(doublecomplex ** Q_, size_t rows, size_t columns, double th
 void aTb(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, TIME_TYPE *comm_timing);
 void ab(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t rows, size_t columns);
 
-void matrix_mult_sq(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t size);
 void equate_matrices(doublecomplex ** dest, doublecomplex ** src, size_t rows_num);
-void mTm(doublecomplex ** res, doublecomplex ** a);
-void mTAm(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b);
 void aTb2(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b);
 void X_new(doublecomplex ** res, doublecomplex ** p_old, doublecomplex ** alfa);
 void R_new(doublecomplex ** res, doublecomplex ** r_old, doublecomplex ** Ap, doublecomplex ** alfa);
 void P_new(doublecomplex ** res, doublecomplex ** r_new, doublecomplex ** p_old, doublecomplex ** beta);
 void vector_new(doublecomplex ** res, doublecomplex ** a_old, doublecomplex ** b_old, doublecomplex ** k, int sign);
 double find_max(doublecomplex **a);
-void sq_matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b);
 
 
 #endif // __linalg_h

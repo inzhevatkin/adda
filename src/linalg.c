@@ -156,58 +156,49 @@ void equate_matrices(doublecomplex ** dest, doublecomplex ** src, size_t rows_nu
 	else fprintf(logfile,"Equate_matrices() error. Output info != 0.\n");
 }
 
-void inv(doublecomplex ** ro){
-	register size_t i,j;
+void inv(doublecomplex ** ptr){
 	register const size_t N=block_size_var;
-    for (i=0;i<N;++i)
-    	for (j=0;j<N;++j) inv_auxiliary[i*N+j]=ro[j][i]; // copy from 2D to 1D array
-    LAPACKE_zgetrf(LAPACK_ROW_MAJOR,N,N,inv_auxiliary,N,IPIV); // LU factorization
-    LAPACKE_zgetri(LAPACK_ROW_MAJOR,N,inv_auxiliary,N,IPIV);
-    for (i=0;i<N;++i)
-    	for (j=0;j<N;++j) ro[j][i]=inv_auxiliary[i*N+j]; // reverse copy
+    LAPACKE_zgetrf(LAPACK_COL_MAJOR,N,N,(lapack_complex_double*)ptr[0],N,IPIV); // LU factorization
+    LAPACKE_zgetri(LAPACK_COL_MAJOR,N,(lapack_complex_double*)ptr[0],N,IPIV);
 }
 
-void QR(doublecomplex ** b, doublecomplex ** R_, size_t rows, size_t columns){
+void QR(doublecomplex ** b,doublecomplex ** R_,size_t rows,size_t columns){
 	// The right side of the linear equation is fed to the input - b. When outputting, this matrix stores Q.
 	// The matrix R stores R part from QR decomposition.
 	//Copy data from 2D array (b) to auxiliary 1D array.
 	//The use of an auxiliary array is not optimal, but I have not come up with another way.
 	//Perhaps if you use LAPACK_COL_MAJOR, you can avoid using the auxiliary matrix.
 	//To do this, you need to move away from 2D arrays in favor of 1D ones.
-	size_t i, j;
-	lapack_int info = 0;
-	int lda = columns;
+	register size_t i,j;
+	lapack_int info=0;
+	int lda=columns;
 	lapack_complex_double *R_auxiliary, *QR_auxiliary, *tau;
 	R_auxiliary = calloc(columns*columns, sizeof(lapack_complex_double));
 	QR_auxiliary = calloc(rows*columns, sizeof(lapack_complex_double));
-	for (i = 0; i != rows; ++i)
-		for (j = 0; j != columns; ++j)
-	        QR_auxiliary[i*columns + j] = b[j][i];
-	tau = calloc(columns, sizeof(lapack_complex_double));
-	info = LAPACKE_zgeqrf(LAPACK_ROW_MAJOR, (int) rows, (int) columns, QR_auxiliary, lda, tau); // returns the Q, R in a packed format
-	if(info != 0)
+	for (i=0;i!=rows;++i)
+		for (j=0;j!=columns;++j)
+	        QR_auxiliary[i*columns+j] = b[j][i];
+	tau=calloc(columns,sizeof(lapack_complex_double));
+	info=LAPACKE_zgeqrf(LAPACK_ROW_MAJOR,(int)rows,(int)columns,QR_auxiliary,lda,tau); // returns the Q, R in a packed format
+	if(info!=0)
 		fprintf(logfile,"LAPACKE_zgeqrf error. Output info != 0. \n");
 	else
 		fprintf(logfile,"LAPACKE_zgeqrf worked successfully. \n");
 	// Copy the upper triangular Matrix R (columns x columns).
-	for(i = 0; i < columns; ++i)
+	for(i=0;i<columns;++i)
 		memcpy(R_auxiliary+i*columns+i, QR_auxiliary+i*columns+i, (columns-i)*sizeof(doublecomplex));
-	info = LAPACKE_zungqr(LAPACK_ROW_MAJOR, (int) rows, (int) columns, (int) columns, QR_auxiliary, lda, tau); // returns the Q in qr_auxiliary
-	if(info != 0)
+	info=LAPACKE_zungqr(LAPACK_ROW_MAJOR,(int)rows,(int)columns,(int)columns,QR_auxiliary,lda,tau); // returns the Q in qr_auxiliary
+	if(info!=0)
 		fprintf(logfile,"LAPACKE_zungqr error. Output info != 0. \n");
 	else
 		fprintf(logfile,"LAPACKE_zungqr worked successfully. \n");
 	// inverse copy data from auxiliary 1D array to 2D array (b).
-	for (i = 0; i != rows; ++i) { //row
-		for (j = 0; j != columns; ++j) { //column
+	for (i=0;i!=rows;++i) //row
+		for (j=0;j!=columns;++j) //column
 			b[j][i] = QR_auxiliary[i*columns + j];
-		}
-	}
-	for (i = 0; i != columns; ++i) { //row
-		for (j = 0; j != columns; ++j) { //column
+	for (i=0;i!=columns;++i) //row
+		for (j=0;j!=columns;++j) //column
 			R_[j][i] = R_auxiliary[i*columns + j];
-		}
-	}
 	free(tau);
 	free(R_auxiliary);
 	free(QR_auxiliary);
@@ -269,7 +260,7 @@ bool QR_first_check(doublecomplex ** Q_, doublecomplex ** R_, doublecomplex ** A
 
 // check:  ||I-Q^HQ|| < threshold
 bool QR_second_check(doublecomplex ** Q_, size_t rows, size_t columns, double thresh) {
-	size_t i, j;
+	size_t i,j;
 	lapack_complex_double *Q_auxiliary;
 	Q_auxiliary = calloc(rows*columns, sizeof(lapack_complex_double));
 	for (i = 0; i != rows; ++i)
@@ -302,45 +293,12 @@ bool QR_second_check(doublecomplex ** Q_, size_t rows, size_t columns, double th
 		return false;
 }
 
-void sq_matrix_mult(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b){
-	size_t i, j, idx;
-	size_t size = block_size_var;
-	doublecomplex * A = inv_auxiliary;
-	doublecomplex * B = mutrix_mult_B_auxiliary;
-	doublecomplex * C = mutrix_mult_C_auxiliary;
-	for (i = 0; i != size; ++i) { //row
-		for (j = 0; j != size; ++j){ //column
-			idx = i*size + j;
-			A[idx] = a[j][i];
-			B[idx] = b[j][i];
-		}
-	}
-	const CBLAS_LAYOUT layout=CblasRowMajor;//CblasRowMajor;
-	const CBLAS_TRANSPOSE TRANS=CblasNoTrans; // no operation
-	const int M = (int)size; // the number  of rows  of the  matrix op( A ),
-	const int N = (int)size; // the number  of columns of the matrix op( B ),
-	const int K = (int)size; // K  specifies  the number of columns of the matrix
-	    		             // op( A ) and the number of rows of the matrix op( B ),
-	double complex ALPHA = 1.0;
-	const int LDA = (int)size;
-	const int LDB = (int)size;
-	doublecomplex BETA = 0.0;
-	const int LDC = (int)size;
-	cblas_zgemm(layout, TRANS, TRANS, M, N, K, &ALPHA, A, LDA, B, LDB, &BETA, C, LDC);
-	for (i = 0; i != size; ++i) { //row
-		for (j = 0; j != size; ++j) { //column
-			idx = i*size + j;
-			res[j][i] = C[idx];
-		}
-	}
-}
-
 void ab(doublecomplex ** res,doublecomplex ** a,doublecomplex ** b,const size_t rows,const size_t columns){
 	// It is impossible to use here already implemented functions of vector products,
 	// since these functions imply multiplication of vectors of size local_nRows
 	// and here it is required to do an additional transposition of first matrix.
-	register doublecomplex sum;
 	register size_t i,j,k;
+	doublecomplex sum;
 	for (j=0;j<rows;j++) { //row of first matrix
 		for (k=0;k<columns;k++) { //column of second matrix
 			sum=0;
@@ -350,45 +308,9 @@ void ab(doublecomplex ** res,doublecomplex ** a,doublecomplex ** b,const size_t 
 	}
 }
 
-void matrix_mult_sq(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, size_t size){
-	doublecomplex sum;
-	for (size_t j=0;j<size;j++) { //row of first matrix
-		for (size_t k=0;k<size;k++) { //column of second matrix
-			sum=0;
-			for (size_t i=0;i<size;i++) sum+=a[i][j]*b[k][i];
-			res[k][j]=sum;
-		}
-	}
-}
-
-void mTm(doublecomplex ** res, doublecomplex ** a) {
-	size_t j, k, i;
-	doublecomplex sum;
-
-	for (j=0;j<block_size_var;j++) { //columns
-		for (k=0;k<block_size_var;k++) { //columns
-			sum=0;
-			for (i=0;i<local_nRows;i++) sum+=a[j][i]*a[k][i];
-			res[k][j]=sum;
-		}
-	}
-}
-
-void mTAm(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b)
-// res - block_size_var*block_size_var matrix
-{
-	doublecomplex sum;
-	for (size_t j=0;j<block_size_var;j++) { // column of a
-		for (size_t k=0;k<block_size_var;k++) { // column of b
-			sum=0;
-			for (size_t i=0;i<local_nRows;i++) sum+=a[j][i]*b[k][i];
-			res[k][j]=sum;
-		}
-	}
-}
-
 void aTb(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, TIME_TYPE *comm_timing)
 // res - block_size_var*block_size_var matrix
+// conjugate dot product of two large vectors (length equals local_nRows)
 {
 	register size_t j,k;
 	for (j=0;j<block_size_var;j++)  // column of a
@@ -398,8 +320,9 @@ void aTb(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b, TIME_TYPE
 
 void aTb2(doublecomplex ** res, doublecomplex ** a, doublecomplex ** b)
 // res - block_size_var*block_size_var matrix
+// conjugate dot product of two vectors (length equals block size)
 {
-	size_t j,k,i;
+	register size_t i,j,k;
 	doublecomplex sum;
 	for (j=0;j<block_size_var;j++) { // column of a
 		for (k=0;k<block_size_var;k++) { // column of b
@@ -414,22 +337,18 @@ void X_new(doublecomplex ** res, doublecomplex ** p_old, doublecomplex ** alfa)
 // x_new=x_old+p_old*alfa
 {
 	ab(pvec_koeff, p_old, alfa, local_nRows, block_size_var);
-	for (size_t j=0;j<block_size_var;j++) { //column
-		for (size_t k=0;k<local_nRows;k++) { //row
+	for (size_t j=0;j<block_size_var;j++) //column
+		for (size_t k=0;k<local_nRows;k++) //row
 			res[j][k]+=pvec_koeff[j][k];
-		}
-	}
 }
 
 void R_new(doublecomplex ** res, doublecomplex ** r_old, doublecomplex ** Ap, doublecomplex ** alfa)
-//r_new=r_old - A*p_old*alfa
+//r_new=r_old-A*p_old*alfa
 {
 	ab(res, Ap, alfa, local_nRows, block_size_var);
-	for (size_t j=0;j<block_size_var;j++) {
-		for (size_t k=0;k<local_nRows;k++) {
+	for (size_t j=0;j<block_size_var;j++)
+		for (size_t k=0;k<local_nRows;k++)
 			res[j][k]=-res[j][k]+r_old[j][k];
-		}
-	}
 }
 
 void vector_new(doublecomplex ** res,doublecomplex ** a,doublecomplex ** b,doublecomplex ** koeff,int sign)
@@ -445,21 +364,21 @@ void vector_new(doublecomplex ** res,doublecomplex ** a,doublecomplex ** b,doubl
 void P_new(doublecomplex ** res, doublecomplex ** r_new, doublecomplex ** p_old, doublecomplex ** beta)
 // p_new=r_new+p_old*beta
 {
-	size_t j, k;
+	register size_t j, k;
 	ab(pvec_koeff, p_old, beta, local_nRows, block_size_var);
-	for (j=0;j<block_size_var;j++) {
-		for (k=0;k<local_nRows;k++) {
+	for (j=0;j<block_size_var;j++)
+		for (k=0;k<local_nRows;k++)
 			res[j][k]=r_new[j][k]+pvec_koeff[j][k];
-		}
-	}
 }
 
-double find_max(doublecomplex **a) {
-	register double sum_cur;
-	register double sum_max=0;
+double find_max(doublecomplex **a)
+{
+	double sum_cur;
+	double sum_max=0;
 	register size_t i,j;
 	for(i=0;i<block_size_var;i++) {
 		sum_cur=0;
+		LARGE_LOOP;
 		for(j=0;j<local_nRows;j++) sum_cur+=cAbs2(a[i][j]);
 		if(sum_max<sum_cur) sum_max=sum_cur;
 	}

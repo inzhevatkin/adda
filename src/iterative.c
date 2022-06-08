@@ -754,9 +754,8 @@ void output(const char * name, doublecomplex ** Array)
 	fprintf(logfile,"%s: ", name);
 	for(size_t j=0;j<block_size_var;j++){
 		fprintf(logfile,"\n");
-		for(size_t i=0;i<block_size_var;i++){
+		for(size_t i=0;i<block_size_var;i++)
 			fprintf(logfile,"%f ", (double)Array[i][j]);
-		}
 	}
 	fprintf(logfile,"\n");
 }

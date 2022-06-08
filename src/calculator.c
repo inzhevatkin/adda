@@ -685,9 +685,8 @@ static double orient_integrand(int beta_i,int gamma_i, double * restrict res)
 
 void malloc_func(doublecomplex **ptr,const size_t rows)
 {
-	register size_t i;
 	doublecomplex *p=malloc(rows*block_size_var*sizeof(doublecomplex));
-	for(i=0;i<block_size_var;i++)
+	for(size_t i=0;i<block_size_var;i++)
 		ptr[i]=&p[i*rows];
 }
 
@@ -780,7 +779,6 @@ static void AllocateEverything(void)
 			po_Matx=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
 			beta_Matx=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
 			alfa_Matx=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			inv_auxiliary=(doublecomplex *)malloc(block_size_var*block_size_var*sizeof(doublecomplex));
 			mutrix_mult_B_auxiliary=(doublecomplex *)malloc(block_size_var*block_size_var*sizeof(doublecomplex));
 			mutrix_mult_C_auxiliary=(doublecomplex *)malloc(block_size_var*block_size_var*sizeof(doublecomplex));
 
@@ -1001,7 +999,6 @@ void FreeEverything(void)
 			free(alfa_Matx);
 			free(pvec_koeff);
 			free(AvecbufferArray);
-			free(inv_auxiliary);
 			free(mutrix_mult_B_auxiliary);
 			free(mutrix_mult_C_auxiliary);
 			// for qr-decomposition:
