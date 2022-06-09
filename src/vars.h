@@ -125,13 +125,13 @@ int* IPIV; // for LAPACK calculations
 
 // for COCGrQ
 // the first index of the arrays is a column, the second is a row
-doublecomplex **zArray;
-doublecomplex **alfa_delta;
 doublecomplex **Q_Array_new;
 doublecomplex **R_Array_new; // s*s
-doublecomplex **delta_Array; // s*s
-doublecomplex **delta_Array_new;
-doublecomplex **roQz; // s*s
+doublecomplex **S_Array;
+doublecomplex **xi_Array; // s*s
+doublecomplex **xi_Array_new; // s*s
+doublecomplex **alfa_xi;
+doublecomplex **tauTqTq;
 
 // for BiCGBlock and COCGrQ
 doublecomplex **AvecbufferArray; // used to hold the result of matrix-vector products,

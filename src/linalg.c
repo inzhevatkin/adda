@@ -59,6 +59,14 @@ void nCopy(doublecomplex * restrict a,const doublecomplex * restrict b)
 
 //======================================================================================================================
 
+void sCopy(doublecomplex * restrict a,const doublecomplex * restrict b)
+// copy vector b to a (a=b); !!! they must not alias !!!
+{
+	memcpy(a,b,block_size_var*sizeof(doublecomplex));
+}
+
+//======================================================================================================================
+
 double nNorm2(const doublecomplex * restrict a,TIME_TYPE *comm_timing)
 // squared norm of a large vector a
 {
@@ -145,14 +153,14 @@ doublecomplex nDotProdSelf_conj(const doublecomplex * restrict a,TIME_TYPE *comm
 //======================================================================================================================
 
 void equate_matrices(doublecomplex ** dest, doublecomplex ** src, size_t rows_num) {
-	register size_t i,j;
+	register size_t i;
 	register const size_t N=block_size_var;
 	if(rows_num==local_nRows)
 		for(i=0;i<N;i++)
-			nCopy(dest[i], src[i]);
+			nCopy(dest[i],src[i]);
 	else if(rows_num==N)
 		for(i=0;i<N;i++)
-			for(j=0;j<N;j++) dest[i][j]=src[i][j];
+			sCopy(dest[i],src[i]);
 	else fprintf(logfile,"Equate_matrices() error. Output info != 0.\n");
 }
 
@@ -371,7 +379,7 @@ void P_new(doublecomplex ** res, doublecomplex ** r_new, doublecomplex ** p_old,
 			res[j][k]=r_new[j][k]+pvec_koeff[j][k];
 }
 
-double find_max(doublecomplex **a)
+double find_max(doublecomplex **a,const size_t rows)
 {
 	double sum_cur;
 	double sum_max=0;
@@ -379,7 +387,7 @@ double find_max(doublecomplex **a)
 	for(i=0;i<block_size_var;i++) {
 		sum_cur=0;
 		LARGE_LOOP;
-		for(j=0;j<local_nRows;j++) sum_cur+=cAbs2(a[i][j]);
+		for(j=0;j<rows;j++) sum_cur+=cAbs2(a[i][j]);
 		if(sum_max<sum_cur) sum_max=sum_cur;
 	}
 	return sum_max;

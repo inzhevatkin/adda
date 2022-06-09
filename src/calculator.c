@@ -683,11 +683,12 @@ static double orient_integrand(int beta_i,int gamma_i, double * restrict res)
 
 //======================================================================================================================
 
-void malloc_func(doublecomplex **ptr,const size_t rows)
+doublecomplex ** malloc_func(const size_t rows)
 {
+	doublecomplex **ptr=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
 	doublecomplex *p=malloc(rows*block_size_var*sizeof(doublecomplex));
-	for(size_t i=0;i<block_size_var;i++)
-		ptr[i]=&p[i*rows];
+	for(size_t i=0;i<block_size_var;i++) ptr[i]=&p[i*rows];
+	return ptr;
 }
 
 static void AllocateEverything(void)
@@ -760,61 +761,31 @@ static void AllocateEverything(void)
 			memory+=2*tmp;
 			break;
 		case IT_BICG_BLOCK: case IT_COCGrQ:
-			rvecArray=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			pvecArray=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			xvecArray=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			AvecbufferArray=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			pvec_koeff=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			//for COCGrQ
-			zArray=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			alfa_delta=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			R_Array_new=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			Q_Array_new=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			delta_Array=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			delta_Array_new=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			roQz=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-
-			ro_Matx=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			ro_new_Matx=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			po_Matx=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			beta_Matx=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			alfa_Matx=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
 			mutrix_mult_B_auxiliary=(doublecomplex *)malloc(block_size_var*block_size_var*sizeof(doublecomplex));
 			mutrix_mult_C_auxiliary=(doublecomplex *)malloc(block_size_var*block_size_var*sizeof(doublecomplex));
-
-			// for QR-decomposition:
-			Q_Array=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-			R_Array=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex));
-			B_copy=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
-
 			IPIV=malloc(block_size_var*sizeof(int));
-
-			malloc_func(rvecArray,local_nRows);
-			malloc_func(pvecArray,local_nRows);
-			malloc_func(xvecArray,local_nRows);
-			malloc_func(AvecbufferArray,local_nRows);
-			malloc_func(pvec_koeff,local_nRows);
-
-			malloc_func(ro_Matx,block_size_var);
-			malloc_func(ro_new_Matx,block_size_var);
-			malloc_func(po_Matx,block_size_var);
-			malloc_func(beta_Matx,block_size_var);
-			malloc_func(alfa_Matx,block_size_var);
-
+			rvecArray=malloc_func(local_nRows);
+			pvecArray=malloc_func(local_nRows);
+			xvecArray=malloc_func(local_nRows);
+			AvecbufferArray=malloc_func(local_nRows);
+			pvec_koeff=malloc_func(local_nRows);
+			ro_Matx=malloc_func(block_size_var);
+			ro_new_Matx=malloc_func(block_size_var);
+			po_Matx=malloc_func(block_size_var);
+			beta_Matx=malloc_func(block_size_var);
+			alfa_Matx=malloc_func(block_size_var);
 			//for COCGrQ
-			malloc_func(zArray,local_nRows);
-			malloc_func(alfa_delta,block_size_var);
-			malloc_func(Q_Array_new,local_nRows);
-			malloc_func(delta_Array,block_size_var);
-			malloc_func(delta_Array_new,block_size_var);
-			malloc_func(roQz,block_size_var);
-
+			alfa_xi=malloc_func(block_size_var);
+			Q_Array_new=malloc_func(local_nRows);
+			S_Array=malloc_func(local_nRows);
+			xi_Array=malloc_func(block_size_var);
+			xi_Array_new=malloc_func(block_size_var);
+			tauTqTq=malloc_func(block_size_var);
 			// for QR-decomposition:
-			malloc_func(Q_Array,local_nRows);
-			malloc_func(R_Array,block_size_var);
-			malloc_func(B_copy,local_nRows);
-			malloc_func(R_Array_new,block_size_var);
-
+			Q_Array=malloc_func(local_nRows);
+			R_Array=malloc_func(block_size_var);
+			B_copy=malloc_func(local_nRows);
+			R_Array_new=malloc_func(block_size_var);
 			break;
 	}
 	/* TO ADD NEW ITERATIVE SOLVER
@@ -1009,12 +980,13 @@ void FreeEverything(void)
 			// for LAPACK calculation
 			free(IPIV);
 			// for COCGrQ:
-			free(zArray);
-			free(alfa_delta);
+			free(alfa_xi);
 			free(Q_Array_new);
-			free(delta_Array);
-			free(delta_Array_new);
-			free(roQz);
+			free(S_Array);
+			free(xi_Array);
+			free(xi_Array_new);
+			free(tauTqTq);
+
 			break;
 	}
 	/* TO ADD NEW ITERATIVE SOLVER

@@ -795,7 +795,7 @@ ITER_FUNC(BiCGBlock)
 			fprintf(logfile,"beta = %f + %f*I\n", creal(beta_Matx[0][0]), cimag(beta_Matx[0][0]));
 			vector_new(pvecArray,rvecArray,pvecArray,beta_Matx,1); //p_new=r_new+p.beta
 			//--------------------------------------------------------------------------------------//
-			inprodRp1=find_max(rvecArray);// find the maximum |r_k+1|^2:
+			inprodRp1=find_max(rvecArray,local_nRows);// find the maximum |r_k+1|^2:
 			return; // end of PHASE_ITER
 	}
 	LogError(ONE_POS,"Unknown phase (%d) of the iterative solver",(int)ph);
@@ -804,12 +804,15 @@ ITER_FUNC(BiCGBlock)
 //======================================================================================================================
 ITER_FUNC(COCGrQ)
 /* Block conjugate gradient for complex symmetric systems with QR-decomposition, based on:
- * Y. Futamura et al. "A REAL-VALUED BLOCK CONJUGATE GRADIENT TYPE METHOD FOR SOLVING COMPLEX SYMMETRIC LINEAR SYSTEMS
+ * X.-M.Gu et al. "Block variants of the COCG and COCR methods for solving complex symmetric linear systems
+ * with multiple right-hand sides" (2016).
+ * Y.Futamura et al. "A REAL-VALUED BLOCK CONJUGATE GRADIENT TYPE METHOD FOR SOLVING COMPLEX SYMMETRIC LINEAR SYSTEMS
  * WITH MULTIPLE RIGHT-HAND SIDES" (2017).
  * There is an error in the pseudocode of COCGrQ: p.354, line 6. Corrected: Q.ro=qr(Q-A.P.alfa).
  */
 {
 	static doublecomplex ro_old;
+	register size_t j;
 	switch (ph) {
 		case PHASE_VARS:
 			scalars[0].ptr=&ro_old;
@@ -820,47 +823,40 @@ ITER_FUNC(COCGrQ)
 		case PHASE_ITER:
 			Dz("Current iteration: "GFORM_DEBUG,(double)niter);
 			if (niter==1) {
-				QR(pvecArray, delta_Array, local_nRows, block_size_var);
-				equate_matrices(zArray, pvecArray, local_nRows);
-				equate_matrices(Q_Array, pvecArray, local_nRows);
+				QR(pvecArray,xi_Array,local_nRows,block_size_var);
+				equate_matrices(Q_Array,pvecArray,local_nRows);
+				equate_matrices(S_Array,Q_Array,local_nRows);
 			}
 			else {
-				equate_matrices(Q_Array, Q_Array_new, local_nRows);
-				equate_matrices(delta_Array, delta_Array_new, block_size_var);
+				equate_matrices(Q_Array,Q_Array_new,local_nRows);
+				equate_matrices(xi_Array,xi_Array_new,block_size_var);
 			}
 			//--------------------------------------------------------------------------------------//
-			// alfa=(pT.A.p)^-1.(QT.z)
-			for(size_t j=0;j<block_size_var;j++)
-				MatVec_wrapper(pvecArray[j],AvecbufferArray[j],NULL,false,&Timing_OneIterMVP,&Timing_OneIterMVPComm); // AvecbufferArray=A.p
-			aTb(po_Matx, pvecArray, AvecbufferArray, &Timing_OneIterComm); // AvecbufferArray=A.p
-			// use one array for po, po^-1
-			inv(po_Matx);
-			aTb(ro_Matx, Q_Array, zArray, &Timing_OneIterComm); // ro_Matx=QT.z
-			ab(alfa_Matx, po_Matx, ro_Matx, block_size_var, block_size_var);
-			fprintf(logfile,"alfa = %f + %f*I\n", creal(alfa_Matx[0][0]), cimag(alfa_Matx[0][0]));
+			for(j=0;j<block_size_var;j++)
+				MatVec_wrapper(S_Array[j],AvecbufferArray[j],NULL,false,&Timing_OneIterMVP,&Timing_OneIterMVPComm); // AvecbufferArray=A.s
+			aTb(po_Matx,S_Array,AvecbufferArray,&Timing_OneIterComm); // s^T.A.s
+			inv(po_Matx); // (sT.A.s)^-1 (one array for po, po^(-1))
+			aTb(ro_Matx,Q_Array,Q_Array,&Timing_OneIterComm); // ro_Matx=q^T.q
+			ab(alfa_Matx,po_Matx,ro_Matx,block_size_var,block_size_var); // alfa=(s^T.A.s)^(-1).(q^T.q)
 			//--------------------------------------------------------------------------------------//
-			// x_new=x_old+p_old.alfa.delta (we use one array for x_old, x_new)
-			ab(alfa_delta, alfa_Matx, delta_Array, block_size_var, block_size_var); // alfa.delta
-			vector_new(xvecArray, xvecArray, pvecArray, alfa_delta, 1);
+			ab(alfa_xi,alfa_Matx,xi_Array,block_size_var,block_size_var); // alfa.xi
+			vector_new(xvecArray,xvecArray,S_Array,alfa_xi,1); // x_new=x_old+s.alfa.xi (we use one array for x_old, x_new)
 			//--------------------------------------------------------------------------------------//
-			// Q.ro=qr(Q-A.P.alfa)
-			vector_new(Q_Array_new, Q_Array, AvecbufferArray, alfa_Matx, -1);
-			QR(Q_Array_new, R_Array_new, local_nRows, block_size_var);
-			ab(delta_Array_new, R_Array_new, delta_Array, block_size_var, block_size_var); // delta_new=ro_new.delta
-			equate_matrices(zArray, Q_Array_new, local_nRows); //znew=Qnew
+			// q.tau=qr(q-A.s.alfa)
+			vector_new(Q_Array_new,Q_Array,AvecbufferArray,alfa_Matx,-1); // q-A.s.alfa
+			QR(Q_Array_new,R_Array_new,local_nRows,block_size_var); // qr(q-A.s.alfa)
+			ab(xi_Array_new,R_Array_new,xi_Array,block_size_var,block_size_var); // xi_new=tau_new.xi
 			//--------------------------------------------------------------------------------------//
-			inv(ro_Matx); // (QT.z)^(-1)
-			fprintf(logfile,"ro_Matx = %f + %f*I\n", creal(ro_Matx[0][0]), cimag(ro_Matx[0][0]));
-			aTb(ro_new_Matx, Q_Array_new, zArray, &Timing_OneIterComm); // ro_new=QnewT.znew
-			fprintf(logfile,"ro_new_Matx = %f + %f*I\n", creal(ro_new_Matx[0][0]), cimag(ro_new_Matx[0][0]));
-			aTb2(roQz, R_Array_new, ro_new_Matx); // roQz=(R_Array_new)T.ro_new
-			ab(beta_Matx, ro_Matx, roQz, block_size_var, block_size_var); // beta=ro.roQz
-			fprintf(logfile,"beta = %f + %f*I\n", creal(beta_Matx[0][0]), cimag(beta_Matx[0][0]));
+			inv(ro_Matx); // (qT.q)^(-1)
+			aTb(ro_new_Matx,Q_Array_new,Q_Array_new,&Timing_OneIterComm); // ro_new=q_new^T.q_new
+			aTb2(tauTqTq,R_Array_new,ro_new_Matx); // tau^T.q_new^T.q_new
+			ab(beta_Matx,ro_Matx,tauTqTq,block_size_var,block_size_var); // beta=tau^(-1).tau^T.q^T.q
 			//--------------------------------------------------------------------------------------//
-			vector_new(pvecArray, zArray, pvecArray, beta_Matx, 1); // p_new=z_new+p.beta
+			vector_new(S_Array,Q_Array_new,S_Array,beta_Matx,1); // s_new=q_new+s.beta (we use one array for s, s_new)
 			//--------------------------------------------------------------------------------------//
-			ab(rvecArray, Q_Array_new, delta_Array_new, local_nRows, block_size_var); // r=Q.delta
-			inprodRp1=find_max(rvecArray); // find the maximum |r[i]|^2
+			// We use xi_new instead rvecArray since their Frobenius norms are equal (Gu et al., 2016).
+			// This may not be entirely correct, since we are using column norms to calculate the residual.
+			inprodRp1=find_max(xi_Array_new,block_size_var); // find the maximum |xi_new[i]|^2
 			return; // end of PHASE_ITER
 	}
 	LogError(ONE_POS,"Unknown phase (%d) of the iterative solver",(int)ph);
@@ -1561,7 +1557,7 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 	double temp=0, loc_temp;
 	char tmp_str[MAX_LINE];
 	TIME_TYPE tstart,time_tmp,time_tmp2,time_tmp3;
-	bool flag_output=true;
+	bool flag_output=false;
 
 	// redundant initialization to remove warnings
 	time_tmp=time_tmp2=time_tmp3=0;

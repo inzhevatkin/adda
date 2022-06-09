@@ -28,6 +28,7 @@
 
 void nInit(doublecomplex * restrict a);
 void nCopy(doublecomplex * restrict a,const doublecomplex * restrict b);
+void sCopy(doublecomplex * restrict a,const doublecomplex * restrict b);
 double nNorm2(const doublecomplex * restrict a,TIME_TYPE *comm_timing);
 doublecomplex nDotProd(const doublecomplex * restrict a,const doublecomplex * restrict b,TIME_TYPE *comm_timing);
 doublecomplex nDotProd_conj(const doublecomplex * restrict a,const doublecomplex * restrict b,TIME_TYPE *comm_timing);
@@ -86,7 +87,7 @@ void X_new(doublecomplex ** res, doublecomplex ** p_old, doublecomplex ** alfa);
 void R_new(doublecomplex ** res, doublecomplex ** r_old, doublecomplex ** Ap, doublecomplex ** alfa);
 void P_new(doublecomplex ** res, doublecomplex ** r_new, doublecomplex ** p_old, doublecomplex ** beta);
 void vector_new(doublecomplex ** res, doublecomplex ** a_old, doublecomplex ** b_old, doublecomplex ** k, int sign);
-double find_max(doublecomplex **a);
+double find_max(doublecomplex **a,const size_t rows);
 
 
 #endif // __linalg_h
