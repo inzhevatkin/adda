@@ -515,7 +515,7 @@ static struct opt_struct options[]={
 		 * !!! If subarguments are added, second-to-last argument should be changed from 1 to UNDEF, and consistency
 		 * test for number of arguments should be implemented in PARSE_FUNC(int_surf) below.
 		 */
-	{PAR(iter),"{bcgs2|bicg|bicgblock|cocgrq|bicgstab|cgnr|csym|qmr|qmr2}","Sets the iterative solver.\n"
+	{PAR(iter),"{bcgs2|bicg|bcgbq|cocgrq|bicgstab|cgnr|csym|qmr|qmr2}","Sets the iterative solver.\n"
 		"Default: qmr",1,NULL},
 		/* TO ADD NEW ITERATIVE SOLVER
 		 * add the short name, used to define the new iterative solver in the command line, to the list "{...}" in the
@@ -1248,7 +1248,7 @@ PARSE_FUNC(iter)
 {
 	if (strcmp(argv[1],"bcgs2")==0) IterMethod=IT_BCGS2;
 	else if (strcmp(argv[1],"bicg")==0) IterMethod=IT_BICG_CS;
-	else if (strcmp(argv[1],"bicgblock")==0) IterMethod=IT_BCGbQ;
+	else if (strcmp(argv[1],"bcgbq")==0) IterMethod=IT_BCGbQ;
 	else if (strcmp(argv[1],"bicgstab")==0) IterMethod=IT_BICGSTAB;
 	else if (strcmp(argv[1],"cocgrq")==0) IterMethod=IT_COCGrQ;
 	else if (strcmp(argv[1],"cgnr")==0) IterMethod=IT_CGNR;
