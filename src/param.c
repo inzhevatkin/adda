@@ -144,6 +144,7 @@ time_t chp_time;           // time of checkpoint (in sec)
 char const *chp_dir;       // directory name to save/load checkpoint
 size_t block_size_var;		   // for block-iterative algorithm
 bool qr_decomposition;
+bool small_range_var;
 // used in make_particle.c
 enum sh shape;                   // particle shape definition
 int sh_Npars;                    // number of shape parameters
@@ -370,6 +371,7 @@ PARSE_FUNC(pol);
 PARSE_FUNC(prognosis);
 PARSE_FUNC(prop);
 PARSE_FUNC(qr_decomp);
+PARSE_FUNC(small_range); //only for tests
 PARSE_FUNC(recalc_resid);
 PARSE_FUNC(rect_dip);
 #ifndef SPARSE
@@ -587,6 +589,7 @@ static struct opt_struct options[]={
 		"vector) is performed automatically. For point-dipole incident beam this determines its direction.\n"
 		"Default: 0 0 1",3,NULL},
 	{PAR(qr_decomp),"","Sets a flag that says we are doing QR-decomposition. Implies the use of a block-iterative algorithm",0,NULL},
+	{PAR(small_range),"","Sets a flag that says that wave incidence range is small. Implies the use of a block-iterative algorithm",0,NULL},
 	{PAR(recalc_resid),"","Recalculate residual at the end of iterative solver.",0,NULL},
 	{PAR(rect_dip),"<x> <y> <z>","Use rectangular-cuboid dipoles. Three arguments are the relative dipole sizes along "
 		"the corresponding axes. Absolute scale is not relevant, i.e. '1 2 2' is equivalent to '0.5 1 1'.\n"
@@ -1404,6 +1407,10 @@ PARSE_FUNC(qr_decomp)
 {
 	qr_decomposition=true;
 }
+PARSE_FUNC(small_range)
+{
+	small_range_var=true;
+}
 PARSE_FUNC(recalc_resid)
 {
 	recalc_resid=true;
@@ -1959,6 +1966,7 @@ void InitVariables(void)
 	// for block-iterative algorithm
 	block_size_var=1;
 	qr_decomposition=false;
+	small_range_var=false;
 
 #ifdef OPENCL
 	gpuInd=0;

@@ -57,6 +57,7 @@ extern TIME_TYPE Timing_EPlane,Timing_EPlaneComm,Timing_IntField,Timing_IntField
 extern size_t TotalEFieldPlane;
 // defined and initialized in param.c
 extern const size_t block_size_var;
+extern const bool small_range_var;
 
 // LOCAL VARIABLES
 
@@ -867,8 +868,10 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 		for(size_t i=0;i<block_size_var;i++) { // test, for(size_t i=0;i<number_rough_shifts;i++)
 			teta+=dt;
 			fi+=dfi;
-			//teta=(double)(PI/180)*rand()/RAND_MAX; // this code for close incidence direction
-			//fi=(double)(PI/180)*rand()/RAND_MAX;
+			if(small_range_var) {
+				teta=(double)(PI/180)*rand()/RAND_MAX;
+				fi=(double)(PI/180)*rand()/RAND_MAX;
+			}
 			prop[0]=sin(teta)*cos(fi);
 			prop[1]=sin(teta)*sin(fi);
 			prop[2]=cos(teta);
