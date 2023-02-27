@@ -107,7 +107,7 @@ static doublecomplex dumb ATT_UNUSED; // dumb variable, used in workaround for i
 
 ITER_FUNC(BCGS2);
 ITER_FUNC(BiCG_CS);
-ITER_FUNC(BiCGBlock);
+ITER_FUNC(BCGbQ);
 ITER_FUNC(COCGrQ);
 ITER_FUNC(BiCGStab);
 ITER_FUNC(CGNR);
@@ -122,7 +122,7 @@ ITER_FUNC(QMR_CS_2);
 static const struct iter_params_struct params[]={
 	{IT_BCGS2,15000,2,1,BCGS2},
 	{IT_BICG_CS,50000,1,0,BiCG_CS},
-	{IT_BCGbQ,50000,1,0,BiCGBlock},
+	{IT_BCGbQ,50000,1,0,BCGbQ},
 	{IT_COCGrQ,50000,1,0,COCGrQ},
 	{IT_BICGSTAB,30000,3,3,BiCGStab},
 	{IT_CGNR,10,1,0,CGNR},
@@ -760,7 +760,7 @@ void output(const char * name, doublecomplex ** Array)
 	fprintf(logfile,"\n");
 }
 
-ITER_FUNC(BiCGBlock)
+ITER_FUNC(BCGbQ)
 /* Block conjugate gradient for complex symmetric systems, based on:
  * D.P. O'Leary "The Block Conjugate Gradient Algorithm and Related Methods" (1980).
  * R.W. Freund "Conjugate gradient-type methods for linear systems with complex symmetric coefficient matrices" (1992).
