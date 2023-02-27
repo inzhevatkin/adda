@@ -713,7 +713,7 @@ static void AllocateEverything(void)
 		MALLOC_VECTOR(pvec,complex,local_nRows,ALL);
 		MALLOC_VECTOR(Einc,complex,local_nRows,ALL);
 		MALLOC_VECTOR(Avecbuffer,complex,local_nRows,ALL);
-		if(IterMethod==IT_BICG_BLOCK || IterMethod==IT_COCGrQ) {
+		if(IterMethod==IT_BCGbQ || IterMethod==IT_COCGrQ) {
 			EincArray=(doublecomplex **)malloc(block_size_var*sizeof(doublecomplex *));
 			for(size_t i=0;i<block_size_var;i++) MALLOC_VECTOR(EincArray[i],complex,local_nRows,ALL);
 		}
@@ -760,7 +760,7 @@ static void AllocateEverything(void)
 			}
 			memory+=2*tmp;
 			break;
-		case IT_BICG_BLOCK: case IT_COCGrQ:
+		case IT_BCGbQ: case IT_COCGrQ:
 			mutrix_mult_B_auxiliary=(doublecomplex *)malloc(block_size_var*block_size_var*sizeof(doublecomplex));
 			mutrix_mult_C_auxiliary=(doublecomplex *)malloc(block_size_var*block_size_var*sizeof(doublecomplex));
 			IPIV=malloc(block_size_var*sizeof(int));
@@ -928,7 +928,7 @@ void FreeEverything(void)
 	Free_cVector(rvec);
 	Free_cVector(pvec);
 	Free_cVector(Avecbuffer);
-	if(IterMethod==IT_BICG_BLOCK || IterMethod==IT_COCGrQ) {
+	if(IterMethod==IT_BCGbQ || IterMethod==IT_COCGrQ) {
 		for(size_t i=0;i<block_size_var;i++) Free_cVector(EincArray[i]);
 		free(EincArray);
 	}
@@ -959,7 +959,7 @@ void FreeEverything(void)
 			Free_cVector(vec1);
 			Free_cVector(vec2);
 			break;
-		case IT_BICG_BLOCK: case IT_COCGrQ:
+		case IT_BCGbQ: case IT_COCGrQ:
 			free(xvecArray);
 			free(rvecArray);
 			free(pvecArray);

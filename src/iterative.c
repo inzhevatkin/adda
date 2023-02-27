@@ -122,7 +122,7 @@ ITER_FUNC(QMR_CS_2);
 static const struct iter_params_struct params[]={
 	{IT_BCGS2,15000,2,1,BCGS2},
 	{IT_BICG_CS,50000,1,0,BiCG_CS},
-	{IT_BICG_BLOCK,50000,1,0,BiCGBlock},
+	{IT_BCGbQ,50000,1,0,BiCGBlock},
 	{IT_COCGrQ,50000,1,0,COCGrQ},
 	{IT_BICGSTAB,30000,3,3,BiCGStab},
 	{IT_CGNR,10,1,0,CGNR},
@@ -1510,8 +1510,8 @@ static const char *CalcInitField(double zero_resid,const enum incpol which)
 				return "x_0 = E_inc";
 			}
 		case IF_ZERO:
-			// So far made support IT_BICG_BLOCK only for this case
-			if (IterMethod==IT_BICG_BLOCK || IterMethod==IT_COCGrQ) {
+			// So far made support IT_BCGbQ only for this case
+			if (IterMethod==IT_BCGbQ || IterMethod==IT_COCGrQ) {
 				for(size_t i=0;i<block_size_var;i++) {
 					nInit(xvecArray[i]); // x_0=0
 					for(size_t j=0;j<local_nRows;j++) {
@@ -1557,7 +1557,7 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 	double temp=0, loc_temp;
 	char tmp_str[MAX_LINE];
 	TIME_TYPE tstart,time_tmp,time_tmp2,time_tmp3;
-	bool flag_output=false;
+	bool flag_output=true;
 
 	// redundant initialization to remove warnings
 	time_tmp=time_tmp2=time_tmp3=0;
@@ -1574,7 +1574,23 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 	tstart=GET_TIME();
 	matvec_ready=false; // can be set to true only in CalcInitField (if !load_chpoint)
 	if (!load_chpoint) {
-		if (IterMethod==IT_BICG_BLOCK || IterMethod==IT_COCGrQ) {
+		// save right side B:
+		FILE *file2;
+		file2 = fopen("B_ADDA_b-2.txt", "w");
+		fprintf(file2, "{");
+		for(size_t j=0;j<local_nRows;j++) {
+			fprintf(file2, "{");
+			for(size_t i=0;i<block_size_var;i++) {
+				fprintf(file2,"%.30f + %.30f*I", creal(EincArray[i][j]), cimag(EincArray[i][j]));
+				if(i != block_size_var-1) fprintf(file2, ", ");
+				else fprintf(file2, "}");
+			}
+			if(j != local_nRows-1) fprintf(file2, ",\n");
+			else fprintf(file2, "}");
+		}
+		fclose(file2);
+
+		if (IterMethod==IT_BCGbQ || IterMethod==IT_COCGrQ) {
 			for(size_t i=0;i<block_size_var;i++) nMult_mat(pvecArray[i],EincArray[i],cc_sqrt);
 			// make a copy of the right side
 			for(size_t i=0;i<block_size_var;i++) for(size_t j=0;j<local_nRows;j++) B_copy[i][j]=pvecArray[i][j];
@@ -1747,7 +1763,7 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 		else if (counter>params[ind_m].mc) LogError(ONE_POS,"Residual norm haven't decreased for maximum allowed "
 			"number of iterations (%d)",params[ind_m].mc);
 	}
-	if (IterMethod==IT_BICG_BLOCK || IterMethod==IT_COCGrQ) {
+	if (IterMethod==IT_BCGbQ || IterMethod==IT_COCGrQ) {
 		if(qr_decomposition) {
 			// find the original unknown x
 			// make a copy of x

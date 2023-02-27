@@ -1248,7 +1248,7 @@ PARSE_FUNC(iter)
 {
 	if (strcmp(argv[1],"bcgs2")==0) IterMethod=IT_BCGS2;
 	else if (strcmp(argv[1],"bicg")==0) IterMethod=IT_BICG_CS;
-	else if (strcmp(argv[1],"bicgblock")==0) IterMethod=IT_BICG_BLOCK;
+	else if (strcmp(argv[1],"bicgblock")==0) IterMethod=IT_BCGbQ;
 	else if (strcmp(argv[1],"bicgstab")==0) IterMethod=IT_BICGSTAB;
 	else if (strcmp(argv[1],"cocgrq")==0) IterMethod=IT_COCGrQ;
 	else if (strcmp(argv[1],"cgnr")==0) IterMethod=IT_CGNR;
@@ -2530,7 +2530,7 @@ void PrintInfo(void)
 		switch (IterMethod) {
 			case IT_BCGS2: fprintf(logfile,"Enhanced Bi-CG Stabilized(2)\n"); break;
 			case IT_BICG_CS: fprintf(logfile,"Bi-CG (complex symmetric)\n"); break;
-			case IT_BICG_BLOCK:fprintf(logfile,"Block Bi-CG (complex symmetric)\n"); break;
+			case IT_BCGbQ:fprintf(logfile,"Block Bi-CG (complex symmetric)\n"); break;
 			case IT_COCGrQ:fprintf(logfile,"Block Bi-CG (complex symmetric) with QR-decomposition\n"); break;
 			case IT_BICGSTAB: fprintf(logfile,"Bi-CG Stabilized\n"); break;
 			case IT_CGNR: fprintf(logfile,"CGNR\n"); break;

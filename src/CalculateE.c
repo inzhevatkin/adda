@@ -851,23 +851,40 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 	int exit_status;
 	TIME_TYPE tstart;
 	double norm, teta, dt, fi, dfi, tm, fim;
+	// test, double number_rough_shifts=10;
 	tm=PI/2; //maximum angle theta
-	dt=tm/block_size_var;
+	dt=tm/block_size_var; // test, dt=tm/number_rough_shifts;
 	teta=-dt;
 	fim=2*PI; //maximum angle phi
-	dfi=fim/block_size_var;
+	dfi=fim/block_size_var; // test, dfi=fim/number_rough_shifts;
 	fi=-dfi;
 
 	tstart=GET_TIME();
 	// calculate the incident field Einc; vector b=Einc*cc_sqrt
 	D("Generating B");
 	D("GenerateB start");
-	if (IterMethod==IT_BICG_BLOCK || IterMethod==IT_COCGrQ) {
-		for(size_t i=0;i<block_size_var;i++) {
+	if (IterMethod==IT_BCGbQ || IterMethod==IT_COCGrQ) {
+		for(size_t i=0;i<block_size_var;i++) { // test, for(size_t i=0;i<number_rough_shifts;i++)
 			teta+=dt;
 			fi+=dfi;
 			//teta=(double)(PI/180)*rand()/RAND_MAX; // this code for close incidence direction
 			//fi=(double)(PI/180)*rand()/RAND_MAX;
+			prop[0]=sin(teta)*cos(fi);
+			prop[1]=sin(teta)*sin(fi);
+			prop[2]=cos(teta);
+			// normalization
+			norm = sqrt(prop[0]*prop[0]+prop[1]*prop[1]+prop[2]*prop[2]);
+			prop[0]/=norm;
+			prop[1]/=norm;
+			prop[2]/=norm;
+			fprintf(logfile,"prop=(%f, %f, %f) \n", prop[0], prop[1], prop[2]);
+			GenerateB (which,EincArray[i]);
+		}
+		// test:
+		/*size_t new_num=block_size_var-number_rough_shifts;
+		for(size_t i=0;i<new_num;i++) { // test, for(size_t i=0;i<block_size_var;i++) {
+			teta=(double)(PI/180)*rand()/RAND_MAX; // this code for close incidence direction
+			fi=(double)(PI/180)*rand()/RAND_MAX;
 			prop[0]=sin(teta)*cos(fi);
 			prop[1]=sin(teta)*sin(fi);
 			prop[2]=cos(teta);
@@ -878,7 +895,7 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 			prop[2]/=norm;
 			fprintf(logfile,"prop=(%f, %f, %f) \n", prop[0], prop[1], prop[2]);
 			GenerateB (which,EincArray[i]);
-		}
+		}*/
 		if (store_beam) StoreFields(which,EincArray[0],NULL,F_BEAM,F_BEAM_TMP,"Einc","Incident beam");
 	}
 	else {
