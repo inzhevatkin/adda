@@ -160,6 +160,17 @@ int local_z1_coer;        // ending z, coerced to be not greater than boxZ (and 
 	// starting, ending x for current processor and number of x layers (based on the division of smallX)
 size_t local_x0,local_x1,local_Nx;
 
+// For Shifted CG algorithm:
+doublecomplex *lArray;
+doublecomplex *dArray;
+doublecomplex *sigmaArray;
+doublecomplex *uArray;
+doublecomplex **pArray;
+doublecomplex **xArray;
+double *inprodRp1Array;
+bool *continue_flag;
+int num_used_n; // number of used refractive indexes
+
 #else // These variables are exclusive to the sparse mode
 
 int *position; // no reason to restrict this to short in sparse mode; actually it points to a part of position_full

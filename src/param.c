@@ -1348,9 +1348,11 @@ PARSE_FUNC(m)
 
 	if (IS_ODD(Narg) || Narg==0) NargError(Narg,"even");
 	Nmat=Nmat_given=Narg/2;
-	if (Nmat>MAX_NMAT) PrintErrorHelp("Too many materials (%d), maximum %d are supported. You may increase parameter "
-		"MAX_NMAT in const.h and recompile.",Nmat,MAX_NMAT);
+	// TODO: this need to be changed, IterMethod is not necessarily set by this point
 	if(IterMethod!=IT_SHIFTED_CG) {
+		if (Nmat>MAX_NMAT) PrintErrorHelp("Too many materials (%d), maximum %d are supported. You may increase "
+			"parameter MAX_NMAT in const.h and recompile.",Nmat,MAX_NMAT);
+		num_used_n=UNDEF;
 		ref_index=ref_indexArr[0];
 		for (i=0;i<Nmat;i++) {
 			ScanDoubleError(argv[2*i+1],&mre);
@@ -1361,6 +1363,8 @@ PARSE_FUNC(m)
 		}
 	}
 	else {
+		if (Nmat>MAX_N_SCG) PrintErrorHelp("Too many materials (%d), maximum %d are supported for Shifted-CG iterative "
+			"solver. You may increase parameter MAX_N_SCG in const.h and recompile.",Nmat,MAX_N_SCG);
 		num_used_n=Nmat;
 		for(i=0;i<num_used_n;i++) {
 			ref_index=ref_indexArr[i];
@@ -2256,6 +2260,9 @@ void VariablesInterconnect(void)
 			"the x- and y-axes (but not z)");
 	}
 	InteractionRealArgs=(beamtype==B_DIPOLE); // other cases may be added here in the future (e.g. nearfields)
+	// temporary solution, until parsing of refractive indices is changed not to rely on knowing iterative solvers 
+	if (IterMethod==IT_SHIFTED_CG && num_used_n==UNDEF || (num_used_n!=Nmat))
+		PrintError("Currently '-iter scg' (if used) must be specified before '-m ...'");
 #ifdef SPARSE
 	if (shape==SH_SPHERE) PrintError("Sparse mode requires shape to be read from file (-shape read ...)");
 #endif

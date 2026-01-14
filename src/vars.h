@@ -105,15 +105,15 @@ extern int local_z0,local_z1,local_z1_coer,local_Nz_unif;
 extern size_t local_Nz,local_x0,local_x1,local_Nx;
 
 // For Shifted CG algorithm:
-doublecomplex *lArray;
-doublecomplex *dArray;
-doublecomplex *sigmaArray;
-doublecomplex *uArray;
-doublecomplex **pArray;
-doublecomplex **xArray;
-double *inprodRp1Array;
-bool *continue_flag;
-int num_used_n; // number of used refractive indexes
+extern doublecomplex *lArray;
+extern doublecomplex *dArray;
+extern doublecomplex *sigmaArray;
+extern doublecomplex *uArray;
+extern doublecomplex **pArray;
+extern doublecomplex **xArray;
+extern double *inprodRp1Array;
+extern bool *continue_flag;
+extern int num_used_n; // number of used refractive indexes
 
 #else // These variables are exclusive to the sparse mode
 

@@ -107,8 +107,9 @@ the compilation may fail or produce wrong results. If you still want to try, ena
 #define BOX_MAX USHRT_MAX
 
 // sizes of some arrays
+// TODO: the following two need to be combined into one parameter
 #define MAX_N_SCG        300  // maximum number of different refractive indices in SCG
-#define MAX_NMAT         300  // maximum number of different refractive indices (<256)
+#define MAX_NMAT         15   // maximum number of different refractive indices (<256)
 #define MAX_N_SH_PARMS   25   // maximum number of shape parameters
 #define MAX_N_BEAM_PARMS 10   // maximum number of beam parameters
 
