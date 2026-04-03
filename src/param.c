@@ -2261,7 +2261,7 @@ void VariablesInterconnect(void)
 	}
 	InteractionRealArgs=(beamtype==B_DIPOLE); // other cases may be added here in the future (e.g. nearfields)
 	// temporary solution, until parsing of refractive indices is changed not to rely on knowing iterative solvers 
-	if (IterMethod==IT_SHIFTED_CG && num_used_n==UNDEF || (num_used_n!=Nmat))
+	if (IterMethod==IT_SHIFTED_CG && (num_used_n==UNDEF || num_used_n!=Nmat))
 		PrintError("Currently '-iter scg' (if used) must be specified before '-m ...'");
 #ifdef SPARSE
 	if (shape==SH_SPHERE) PrintError("Sparse mode requires shape to be read from file (-shape read ...)");
