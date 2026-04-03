@@ -39,6 +39,10 @@ extern doublecomplex * restrict EplaneX, * restrict EplaneY, * restrict EyzplX, 
 extern const double dtheta_deg,dtheta_rad;
 extern doublecomplex * restrict ampl_alphaX,* restrict ampl_alphaY;
 extern double * restrict muel_alpha;
+extern doublecomplex **scgEplaneX_store, **scgEplaneY_store;
+extern doublecomplex **scgEyzplX_store, **scgEyzplY_store;
+extern doublecomplex **scgEgridX_store, **scgEgridY_store;
+extern doublecomplex **scgAmplAlphaX_store, **scgAmplAlphaY_store;
 // defined and initialized in crosssec.c
 extern const Parms_1D phi_sg;
 extern const double ezLab[3],exSP[3];
@@ -80,6 +84,74 @@ extern doublecomplex chi_invArr[MAX_N_SCG][MAX_NMAT][3];
 void GenerateB(enum incpol which,doublecomplex *x);
 // iterative.c
 int IterativeSolver(enum iter method,enum incpol which);
+
+//======================================================================================================================
+
+static void SaveScgScatFields(const int idx,const enum incpol which,const enum Eftype type)
+{
+	const size_t plane_size=2*(size_t)nTheta;
+
+	if (!IFROOT) return;
+
+	if (orient_avg) {
+		const size_t alpha_size=plane_size*alpha_int.N;
+
+		if (!store_mueller) return;
+		if (which==INCPOL_X || type==CE_PARPER) memcpy(scgAmplAlphaX_store[idx],ampl_alphaX,
+			alpha_size*sizeof(doublecomplex));
+		if (which==INCPOL_Y || type==CE_PARPER) memcpy(scgAmplAlphaY_store[idx],ampl_alphaY,
+			alpha_size*sizeof(doublecomplex));
+		return;
+	}
+
+	if (yzplane) {
+		if (which==INCPOL_X || type==CE_PARPER) memcpy(scgEyzplX_store[idx],EyzplX,plane_size*sizeof(doublecomplex));
+		if (which==INCPOL_Y || type==CE_PARPER) memcpy(scgEyzplY_store[idx],EyzplY,plane_size*sizeof(doublecomplex));
+	}
+	if (scat_plane) {
+		if (which==INCPOL_X || type==CE_PARPER) memcpy(scgEplaneX_store[idx],EplaneX,plane_size*sizeof(doublecomplex));
+		if (which==INCPOL_Y || type==CE_PARPER) memcpy(scgEplaneY_store[idx],EplaneY,plane_size*sizeof(doublecomplex));
+	}
+	if (scat_grid) {
+		const size_t grid_size=2*(size_t)angles.N;
+
+		if (which==INCPOL_X) memcpy(scgEgridX_store[idx],EgridX,grid_size*sizeof(doublecomplex));
+		if (which==INCPOL_Y) memcpy(scgEgridY_store[idx],EgridY,grid_size*sizeof(doublecomplex));
+	}
+}
+
+//======================================================================================================================
+
+void RestoreScgScatFields(const int idx)
+{
+	const size_t plane_size=2*(size_t)nTheta;
+
+	if (!IFROOT) return;
+
+	if (orient_avg) {
+		const size_t alpha_size=plane_size*alpha_int.N;
+
+		if (!store_mueller) return;
+		memcpy(ampl_alphaX,scgAmplAlphaX_store[idx],alpha_size*sizeof(doublecomplex));
+		memcpy(ampl_alphaY,scgAmplAlphaY_store[idx],alpha_size*sizeof(doublecomplex));
+		return;
+	}
+
+	if (yzplane) {
+		memcpy(EyzplX,scgEyzplX_store[idx],plane_size*sizeof(doublecomplex));
+		memcpy(EyzplY,scgEyzplY_store[idx],plane_size*sizeof(doublecomplex));
+	}
+	if (scat_plane) {
+		memcpy(EplaneX,scgEplaneX_store[idx],plane_size*sizeof(doublecomplex));
+		memcpy(EplaneY,scgEplaneY_store[idx],plane_size*sizeof(doublecomplex));
+	}
+	if (scat_grid) {
+		const size_t grid_size=2*(size_t)angles.N;
+
+		memcpy(EgridX,scgEgridX_store[idx],grid_size*sizeof(doublecomplex));
+		memcpy(EgridY,scgEgridY_store[idx],grid_size*sizeof(doublecomplex));
+	}
+}
 
 //======================================================================================================================
 
@@ -896,7 +968,7 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 		char directoryOld[MAX_DIRNAME]="";
 		strcpy(directoryOld, directory); // copy old directory
 		for(int i=0;i<num_used_n;i++) {
-			static char dir_m[10]="";
+			static char dir_m[64]="";
 			ref_index=ref_indexArr[i];
 			sprintf (dir_m, "/m%.10g %.10g", creal(ref_index[0]), cimag(ref_index[0]));
 			strcpy(directoriesNew[i],directory);
@@ -910,6 +982,7 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 			if (all_dir) CalcAlldir();
 			// Calculate the scattered field on the given grid of angles
 			if (scat_grid) CalcScatGrid(which);
+			SaveScgScatFields(i,which,type);
 			// Calculate integral scattering quantities (cross sections, asymmetry parameter, electric forces)
 			cc=ccArr[i];
 			cc_sqrt=cc_sqrtArr[i];
