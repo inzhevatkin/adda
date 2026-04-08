@@ -676,8 +676,7 @@ static void calculate_one_orientation(double * restrict res)
 	D("CalculateE finished");
 	if (IterMethod!=IT_SHIFTED_CG) MuellerMatrix();
 	else {
-		char directoryOld[MAX_DIRNAME]="";
-		strcpy(directoryOld, directory); // copy old directory
+		const char *directoryOld = directory; // store the original address of the folder for second call of CalculateE
 		for(int i=0;i<num_used_n;i++){
 			directory=directoriesNew[i];
 			RestoreScgScatFields(i);

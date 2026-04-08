@@ -965,15 +965,14 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 		if (store_int_field) StoreIntFields(which);
 		if (store_dip_pol) StoreFields(which,pvec,NULL,F_DIPPOL,F_DIPPOL_TMP,"P","Dipole polarizations");
 	} else {
-		char directoryOld[MAX_DIRNAME]="";
-		strcpy(directoryOld, directory); // copy old directory
+		const char *directoryOld = directory; // store the original address of the folder for second call of CalculateE
 		for(int i=0;i<num_used_n;i++) {
 			static char dir_m[64]="";
 			ref_index=ref_indexArr[i];
 			sprintf (dir_m, "/m%.10g %.10g", creal(ref_index[0]), cimag(ref_index[0]));
 			strcpy(directoriesNew[i],directory);
 			strcat(directoriesNew[i],dir_m);
-			MkDirErr(directoriesNew[i],ONE_POS);
+			if (which == INCPOL_Y) MkDirErr(directoriesNew[i],ONE_POS); // make a new folder only for the first pol
 			directory=directoriesNew[i]; // change the folder
 			nCopy(pvec,xArray[i]); // copy polarization to pvec for each refractive index
 			if (yzplane) CalcEplaneYZ(which,type);     // generally plane of incPolY and prop
