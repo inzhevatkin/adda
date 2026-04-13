@@ -43,6 +43,7 @@ extern doublecomplex **scgEplaneX_store, **scgEplaneY_store;
 extern doublecomplex **scgEyzplX_store, **scgEyzplY_store;
 extern doublecomplex **scgEgridX_store, **scgEgridY_store;
 extern doublecomplex **scgAmplAlphaX_store, **scgAmplAlphaY_store;
+extern double * restrict scgCext_store, * restrict scgCabs_store;
 // defined and initialized in crosssec.c
 extern const Parms_1D phi_sg;
 extern const double ezLab[3],exSP[3];
@@ -131,6 +132,8 @@ void RestoreScgScatFields(const int idx)
 	if (orient_avg) {
 		const size_t alpha_size=plane_size*alpha_int.N;
 
+		muel_alpha[-2]=scgCext_store[idx];
+		muel_alpha[-1]=scgCabs_store[idx];
 		if (!store_mueller) return;
 		memcpy(ampl_alphaX,scgAmplAlphaX_store[idx],alpha_size*sizeof(doublecomplex));
 		memcpy(ampl_alphaY,scgAmplAlphaY_store[idx],alpha_size*sizeof(doublecomplex));
@@ -972,7 +975,8 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 			sprintf (dir_m, "/m%.10g %.10g", creal(ref_index[0]), cimag(ref_index[0]));
 			strcpy(directoriesNew[i],directory);
 			strcat(directoriesNew[i],dir_m);
-			if (which == INCPOL_Y) MkDirErr(directoriesNew[i],ONE_POS); // make a new folder only for the first pol
+			// make a new folder only for the first polarization and root (for MPI)
+			if (which == INCPOL_Y && IFROOT) MkDirErr(directoriesNew[i],ONE_POS);
 			directory=directoriesNew[i]; // change the folder
 			nCopy(pvec,xArray[i]); // copy polarization to pvec for each refractive index
 			if (yzplane) CalcEplaneYZ(which,type);     // generally plane of incPolY and prop
@@ -981,14 +985,24 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 			if (all_dir) CalcAlldir();
 			// Calculate the scattered field on the given grid of angles
 			if (scat_grid) CalcScatGrid(which);
-			SaveScgScatFields(i,which,type);
-			// Calculate integral scattering quantities (cross sections, asymmetry parameter, electric forces)
-			cc=ccArr[i];
-			cc_sqrt=cc_sqrtArr[i];
-			chi_inv=chi_invArr[i];
-			if (calc_Cext || calc_Cabs || calc_Csca || calc_asym || calc_mat_force) CalcIntegralScatQuantities(which);
-			// saves internal fields and/or dipole polarizations to text file
-			if (store_int_field) {
+				SaveScgScatFields(i,which,type);
+				// Calculate integral scattering quantities (cross sections, asymmetry parameter, electric forces)
+				cc=ccArr[i];
+				cc_sqrt=cc_sqrtArr[i];
+				chi_inv=chi_invArr[i];
+				if (calc_Cext || calc_Cabs || calc_Csca || calc_asym || calc_mat_force) {
+					if (orient_avg && IFROOT && which==INCPOL_X) {
+						muel_alpha[-2]=scgCext_store[i];
+						muel_alpha[-1]=scgCabs_store[i];
+					}
+					CalcIntegralScatQuantities(which);
+					if (orient_avg && IFROOT) {
+						scgCext_store[i]=muel_alpha[-2];
+						scgCabs_store[i]=muel_alpha[-1];
+					}
+				}
+				// saves internal fields and/or dipole polarizations to text file
+				if (store_int_field) {
 				// copy polarization to xvec for each refractive index
 				// TODO: polarization->electric field
 				nCopy(xvec,xArray[i]);
