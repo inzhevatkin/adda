@@ -24,6 +24,7 @@
 double Romberg1D(Parms_1D param,int size,const double * restrict data,double * restrict ss);
 
 void Romberg2D(const Parms_1D parms_input[2],double (*func_input)(int theta,int phi,double * restrict res),
-	int dim_input, double * restrict res, const char * restrict fname);
+	int dim_input, double * restrict res, const char * restrict fname,const int * restrict conv_comp_input,
+	int conv_comp_N_input);
 
 #endif // __Romberg_h

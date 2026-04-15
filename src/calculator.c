@@ -1170,14 +1170,19 @@ void Calculator (void)
 		if (orient_avg) {
 			const size_t orient_dim=block_theta+2;
 			size_t orient_count;
+			int conv_comp[MAX_N_SCG];
+			int conv_comp_N=0;
 
-			if (IterMethod==IT_SHIFTED_CG) orient_count=num_used_n;
+			if (IterMethod==IT_SHIFTED_CG) {
+				orient_count=num_used_n;
+				for (int i=0;i<num_used_n;i++) conv_comp[conv_comp_N++]=i*orient_dim;
+			}
 			else orient_count=1;
 
 			if (IFROOT) {
 				SnprintfErr(ONE_POS,fname,MAX_FNAME,"%s/"F_LOG_ORAVG,directory);
 				D("Romberg2D started on root");
-				Romberg2D(parms,orient_integrand,orient_count*orient_dim,out,fname);
+				Romberg2D(parms,orient_integrand,orient_count*orient_dim,out,fname,conv_comp,conv_comp_N);
 				D("Romberg2D finished on root");
 				finish_avg=true;
 			/* first two are dummy variables; this call corresponds to one in orient_integrand by other processors;
