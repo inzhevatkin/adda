@@ -143,7 +143,6 @@ void MatVecRaw (doublecomplex * restrict argvec,    // the argument vector
 	size_t i;
 	doublecomplex fmat[6],xv[3],yv[3],xvR[3],yvR[3];
 	size_t index,y,z,Xcomp;
-	unsigned char mat;
 #ifdef PRECISE_TIMING
 	SYSTEM_TIME tvp[18];
 	SYSTEM_TIME Timing_FFTXf,Timing_FFTYf,Timing_FFTZf,Timing_FFTXb,Timing_FFTYb,Timing_FFTZb,Timing_Mult1,Timing_Mult2,
@@ -204,7 +203,6 @@ void MatVecRaw (doublecomplex * restrict argvec,    // the argument vector
 	for (i=0;i<local_nvoid_Ndip;i++) {
 		// fill grid with argvec
 		j=3*i;
-		mat=material[i];
 		index=IndexXmatrix(position[j],position[j+1],position[j+2]);
 		// Xmat=argvec
 		for (Xcomp=0;Xcomp<3;Xcomp++) Xmatrix[index+Xcomp*local_Nsmall]=argvec[j+Xcomp];
@@ -350,7 +348,6 @@ void MatVecRaw (doublecomplex * restrict argvec,    // the argument vector
 	// fill resultvec
 	for (i=0;i<local_nvoid_Ndip;i++) {
 		j=3*i;
-		mat=material[i];
 		index=IndexXmatrix(position[j],position[j+1],position[j+2]);
 		for (Xcomp=0;Xcomp<3;Xcomp++) // result=Xmat
 			resultvec[j+Xcomp]=Xmatrix[index+Xcomp*local_Nsmall];

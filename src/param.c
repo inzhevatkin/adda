@@ -843,8 +843,8 @@ static void TestNarg(const int Narg,const int need)
 {
 	if (need>=0) { // usual case
 		if (Narg!=need) {
-			char buf[MAX_WORD];
-			snprintf(buf,MAX_WORD,"%d",need);
+			char buf[16];
+			snprintf(buf,sizeof(buf),"%d",need);
 			NargError(Narg,buf);
 		}
 	} // otherwise special cases are considered, encoded by negative values
