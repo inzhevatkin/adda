@@ -20,6 +20,7 @@
 // system headers
 #include <limits.h> // for INT_MIN and INT_MAX
 #include <math.h>
+#include <stddef.h> // for size_t
 
 typedef struct {
 	int l1; // first level index
@@ -29,6 +30,8 @@ typedef struct {
 extern opt_index opt; // defined in param.c
 
 void PrintErrorHelp(const char * restrict fmt, ... ) ATT_PRINTF(1,2) ATT_NORETURN;
+
+void BuildScgDirectoryName(int idx,const char *base_dir,char *out,size_t out_size);
 
 //======================================================================================================================
 

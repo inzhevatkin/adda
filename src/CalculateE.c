@@ -26,6 +26,7 @@
 #include "Romberg.h"
 #include "timing.h"
 #include "vars.h"
+#include "param.h"
 // system headers
 #include <math.h>
 #include <stdlib.h>
@@ -970,14 +971,9 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 	} else {
 		const char *directoryOld = directory; // store the original address of the folder for second call of CalculateE
 		for(int i=0;i<num_used_n;i++) {
-			static char dir_m[64]="";
-			ref_index=ref_indexArr[i];
-			sprintf (dir_m, "/m%.10g %.10g", creal(ref_index[0]), cimag(ref_index[0]));
-			strcpy(directoriesNew[i],directory);
-			strcat(directoriesNew[i],dir_m);
-			// make a new folder only for the first polarization and root (for MPI)
-			if (which == INCPOL_Y && IFROOT) MkDirErr(directoriesNew[i],ONE_POS);
-			directory=directoriesNew[i]; // change the folder
+			char scg_dir[MAX_DIRNAME];
+			BuildScgDirectoryName(i,directoryOld,scg_dir,MAX_DIRNAME);
+			directory=scg_dir; // change the folder
 			nCopy(pvec,xArray[i]); // copy polarization to pvec for each refractive index
 			if (yzplane) CalcEplaneYZ(which,type);     // generally plane of incPolY and prop
 			if (scat_plane) CalcScatPlane(which,type); // the scattering plane through ez,prop,incPolX - xz by default

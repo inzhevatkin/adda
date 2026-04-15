@@ -27,6 +27,7 @@
 #include "Romberg.h"
 #include "timing.h"
 #include "vars.h"
+#include "param.h"
 // system headers
 #include <math.h>
 #include <stdlib.h>
@@ -679,7 +680,9 @@ static void calculate_one_orientation(double * restrict res)
 	else if (!orient_avg) {
 		const char *directoryOld = directory; // store the original address of the folder for second call of CalculateE
 		for(int i=0;i<num_used_n;i++){
-			directory=directoriesNew[i];
+			char scg_dir[MAX_DIRNAME];
+			BuildScgDirectoryName(i,directoryOld,scg_dir,MAX_DIRNAME);
+			directory=scg_dir;
 			RestoreScgScatFields(i);
 			MuellerMatrix();
 		}
@@ -694,7 +697,9 @@ static void calculate_one_orientation(double * restrict res)
 			const char *directoryOld=directory;
 
 			for (int i=0;i<num_used_n;i++) {
-				directory=directoriesNew[i];
+				char scg_dir[MAX_DIRNAME];
+				BuildScgDirectoryName(i,directoryOld,scg_dir,MAX_DIRNAME);
+				directory=scg_dir;
 				RestoreScgScatFields(i);
 				MuellerMatrix();
 				if (store_mueller) PRINTFB("\nError of alpha integration (Mueller) is "GFORMDEF"\n",
@@ -1183,7 +1188,9 @@ void Calculator (void)
 					const char *directoryOld=directory;
 
 					for (int i=0;i<num_used_n;i++) {
-						directory=directoriesNew[i];
+						char scg_dir[MAX_DIRNAME];
+						BuildScgDirectoryName(i,directoryOld,scg_dir,MAX_DIRNAME);
+						directory=scg_dir;
 						SaveMuellerAndCS(out+i*orient_dim);
 					}
 					directory=directoryOld;

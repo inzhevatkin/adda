@@ -75,7 +75,6 @@ double beam_center_0[3];      // coordinates of the beam center
 
 // file info
 const char * restrict directory; // directory to save data in
-char directoriesNew[MAX_N_SCG][MAX_DIRNAME]; //TODO: change to dynamic allocation of memory
 FILE * restrict logfile;         // file where all the information about the run is saved
 int term_width;                  // width of the terminal to which ADDA produces output
 
