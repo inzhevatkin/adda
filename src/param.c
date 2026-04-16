@@ -843,8 +843,8 @@ static void TestNarg(const int Narg,const int need)
 {
 	if (need>=0) { // usual case
 		if (Narg!=need) {
-			char buf[MAX_WORD];
-			snprintf(buf,MAX_WORD,"%d",need);
+			char buf[16];
+			snprintf(buf,sizeof(buf),"%d",need);
 			NargError(Narg,buf);
 		}
 	} // otherwise special cases are considered, encoded by negative values
@@ -2261,7 +2261,7 @@ void VariablesInterconnect(void)
 	}
 	InteractionRealArgs=(beamtype==B_DIPOLE); // other cases may be added here in the future (e.g. nearfields)
 	// temporary solution, until parsing of refractive indices is changed not to rely on knowing iterative solvers 
-	if (IterMethod==IT_SHIFTED_CG && num_used_n==UNDEF || (num_used_n!=Nmat))
+	if (IterMethod==IT_SHIFTED_CG && (num_used_n==UNDEF || num_used_n!=Nmat))
 		PrintError("Currently '-iter scg' (if used) must be specified before '-m ...'");
 #ifdef SPARSE
 	if (shape==SH_SPHERE) PrintError("Sparse mode requires shape to be read from file (-shape read ...)");
@@ -2364,6 +2364,15 @@ void FinalizeSymmetry(void) {
 
 //======================================================================================================================
 
+void BuildScgDirectoryName(const int idx,const char *base_dir,char *out,const size_t out_size)
+// build output subdirectory name for the given refractive index in Shifted_CG mode
+{
+	SnprintfErr(ONE_POS,out,out_size,"%s/m%.10g %.10g",
+		base_dir,creal(ref_indexArr[idx][0]),cimag(ref_indexArr[idx][0]));
+}
+
+//======================================================================================================================
+
 void DirectoryLog(const int argc,char **argv)
 // create input directory and start logfile
 {
@@ -2420,6 +2429,13 @@ void DirectoryLog(const int argc,char **argv)
 	if (IFROOT) {
 		MkDirErr(directory,ONE_POS);
 		PRINTFB("all data is saved in '%s'\n",directory);
+		if (IterMethod==IT_SHIFTED_CG) {
+			char scg_dir[MAX_DIRNAME];
+			for (i=0;i<num_used_n;i++) {
+				BuildScgDirectoryName(i,directory,scg_dir,MAX_DIRNAME);
+				MkDirErr(scg_dir,ONE_POS);
+			}
+		}
 	}
 	// make logname; do it for all processors to enable additional logging in LogError
 	if (IFROOT) SnprintfErr(ONE_POS,logfname,MAX_FNAME,"%s/"F_LOG,directory);

@@ -70,6 +70,8 @@ static double * restrict tv1, // 4^m
 // pointer to the function that is integrated
 static double (*func)(int theta,int phi,double * restrict res);
 static const Parms_1D *input; // parameters of integration
+static const int * restrict conv_comp; // components used to estimate outer-loop convergence
+static int conv_comp_N;                // number of components used for outer-loop convergence
 
 //======================================================================================================================
 
@@ -391,10 +393,10 @@ static double OuterRomberg(double * restrict res)
  * periodic then only the first column of the table is used - i.e. trapezoid rule
  */
 {
-	int m,m0,comp;
+	int m,m0,comp,k;
 	double abs_res,abs_err; // norms of result and error
 	double int_err; // absolute error of previous layer integration
-	double err;
+	double err,err_comp;
 
 	// redundant initialization to remove warnings
 	err=int_err=0;
@@ -404,7 +406,14 @@ static double OuterRomberg(double * restrict res)
 		int_err=InnerRomberg(0,res,false);
 		fprintf(file,"single\t\t%d integrand-values were used.\n",N_eval);
 		N_tot_eval+=N_eval;
-		return ((res[0]==0) ? 0 : (int_err/fabs(res[0])));
+		err=0;
+		for (k=0;k<conv_comp_N;k++) {
+			comp=conv_comp[k];
+			if (res[comp]==0) err_comp=0;
+			else err_comp=int_err/fabs(res[comp]);
+			if (err_comp>err) err=err_comp;
+		}
+		return err;
 	}
 	m0=0; // equals 0 for periodic, m otherwise
 	for (m=0;m<input[THETA].Jmax;m++) {
@@ -431,11 +440,16 @@ static double OuterRomberg(double * restrict res)
 		if (m0!=0) RombergIterate(M_out,m);
 		// get error and check for convergence
 		if (m>=input[THETA].Jmin-1) { // this is always reached, sooner or later
-			abs_res=0.5*fabs(M_out[0][0]+T_out[0]);
-			// absolute error is sum of the errors for current integration and accumulated inner error
-			abs_err=0.5*fabs(M_out[0][0]-T_out[0])+int_err;
-			if (abs_res==0) err=0;
-			else err=abs_err/abs_res;
+			err=0;
+			for (k=0;k<conv_comp_N;k++) {
+				comp=conv_comp[k];
+				abs_res=0.5*fabs(M_out[0][comp]+T_out[comp]);
+				// absolute error is sum of the errors for current integration and accumulated inner error
+				abs_err=0.5*fabs(M_out[0][comp]-T_out[comp])+int_err;
+				if (abs_res==0) err_comp=0;
+				else err_comp=abs_err/abs_res;
+				if (err_comp>err) err=err_comp;
+			}
 			if (err<input[THETA].eps) break;
 		}
 	}
@@ -454,7 +468,8 @@ static inline const char *TextTest(const bool cond)
 //======================================================================================================================
 
 void Romberg2D(const Parms_1D parms_input[2],double (*func_input)(int theta,int phi,double * restrict res),
-	const int dim_input,double * restrict res,const char * restrict fname)
+	const int dim_input,double * restrict res,const char * restrict fname,const int * restrict conv_comp_input,
+	const int conv_comp_N_input)
 /* Integrate 2D func with Romberg's method according to input's parameters. Function func_input returns the estimate of
  * the absolute error. Argument dim_input gives the number of components of (double *). Consistency between 'func' and
  * 'dim_input' is the user's responsibility. Result is normalized on the interval widths, i.e. actually averaging takes
@@ -469,6 +484,14 @@ void Romberg2D(const Parms_1D parms_input[2],double (*func_input)(int theta,int 
 	dim = dim_input;
 	func = func_input;
 	input = parms_input;
+	conv_comp = conv_comp_input;
+	conv_comp_N = conv_comp_N_input;
+	if (conv_comp==NULL || conv_comp_N<=0) {
+		static const int default_conv_comp[1]={0};
+
+		conv_comp = default_conv_comp;
+		conv_comp_N = 1;
+	}
 	file=FOpenErr(fname,"w",ONE_POS);
 	no_convergence = 0;
 	N_tot_eval=0;

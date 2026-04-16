@@ -1280,6 +1280,7 @@ ITER_FUNC(Shifted_CG)
 		for(i=0;i<num_used_n;i++) {
 			lArray[i]=0;
 			uArray[i]=0;
+			nInit(pArray[i]);
 			nInit(xArray[i]);
 			ref_index=ref_indexArr[i];
 			cc=ccArr[i];
