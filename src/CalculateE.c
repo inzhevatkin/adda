@@ -981,24 +981,24 @@ int CalculateE(const enum incpol which,const enum Eftype type)
 			if (all_dir) CalcAlldir();
 			// Calculate the scattered field on the given grid of angles
 			if (scat_grid) CalcScatGrid(which);
-				SaveScgScatFields(i,which,type);
-				// Calculate integral scattering quantities (cross sections, asymmetry parameter, electric forces)
-				cc=ccArr[i];
-				cc_sqrt=cc_sqrtArr[i];
-				chi_inv=chi_invArr[i];
-				if (calc_Cext || calc_Cabs || calc_Csca || calc_asym || calc_mat_force) {
-					if (orient_avg && IFROOT && which==INCPOL_X) {
-						muel_alpha[-2]=scgCext_store[i];
-						muel_alpha[-1]=scgCabs_store[i];
-					}
-					CalcIntegralScatQuantities(which);
-					if (orient_avg && IFROOT) {
-						scgCext_store[i]=muel_alpha[-2];
-						scgCabs_store[i]=muel_alpha[-1];
-					}
+			SaveScgScatFields(i,which,type);
+			// Calculate integral scattering quantities (cross sections, asymmetry parameter, electric forces)
+			cc=ccArr[i];
+			cc_sqrt=cc_sqrtArr[i];
+			chi_inv=chi_invArr[i];
+			if (calc_Cext || calc_Cabs || calc_Csca || calc_asym || calc_mat_force) {
+				if (orient_avg && IFROOT && which==INCPOL_X) {
+					muel_alpha[-2]=scgCext_store[i];
+					muel_alpha[-1]=scgCabs_store[i];
 				}
-				// saves internal fields and/or dipole polarizations to text file
-				if (store_int_field) {
+				CalcIntegralScatQuantities(which);
+				if (orient_avg && IFROOT) {
+					scgCext_store[i]=muel_alpha[-2];
+					scgCabs_store[i]=muel_alpha[-1];
+				}
+			}
+			// saves internal fields and/or dipole polarizations to text file
+			if (store_int_field) {
 				// copy polarization to xvec for each refractive index
 				// TODO: polarization->electric field
 				nCopy(xvec,xArray[i]);

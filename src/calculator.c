@@ -1167,43 +1167,43 @@ void Calculator (void)
 	// prognosis stops here
 	if (prognosis) return;
 	// main calculation part
-		if (orient_avg) {
-			const size_t orient_dim=block_theta+2;
-			size_t orient_count;
-			int conv_comp[MAX_N_SCG];
-			int conv_comp_N=0;
+	if (orient_avg) {
+		const size_t orient_dim=block_theta+2;
+		size_t orient_count;
+		int conv_comp[MAX_N_SCG];
+		int conv_comp_N=0;
 
-			if (IterMethod==IT_SHIFTED_CG) {
-				orient_count=num_used_n;
-				for (int i=0;i<num_used_n;i++) conv_comp[conv_comp_N++]=i*orient_dim;
-			}
-			else orient_count=1;
-
-			if (IFROOT) {
-				SnprintfErr(ONE_POS,fname,MAX_FNAME,"%s/"F_LOG_ORAVG,directory);
-				D("Romberg2D started on root");
-				Romberg2D(parms,orient_integrand,orient_count*orient_dim,out,fname,conv_comp,conv_comp_N);
-				D("Romberg2D finished on root");
-				finish_avg=true;
-			/* first two are dummy variables; this call corresponds to one in orient_integrand by other processors;
-			 * TODO: replace by a call without unnecessary overhead
-				 */
-				BcastOrient(&finish_avg,&finish_avg,&finish_avg);
-				if (IterMethod==IT_SHIFTED_CG) {
-					const char *directoryOld=directory;
-
-					for (int i=0;i<num_used_n;i++) {
-						char scg_dir[MAX_DIRNAME];
-						BuildScgDirectoryName(i,directoryOld,scg_dir,MAX_DIRNAME);
-						directory=scg_dir;
-						SaveMuellerAndCS(out+i*orient_dim);
-					}
-					directory=directoryOld;
-				}
-				else SaveMuellerAndCS(out);
-			}
-			else while (!finish_avg) orient_integrand(0,0,NULL);
+		if (IterMethod==IT_SHIFTED_CG) {
+			orient_count=num_used_n;
+			for (int i=0;i<num_used_n;i++) conv_comp[conv_comp_N++]=i*orient_dim;
 		}
+		else orient_count=1;
+
+		if (IFROOT) {
+			SnprintfErr(ONE_POS,fname,MAX_FNAME,"%s/"F_LOG_ORAVG,directory);
+			D("Romberg2D started on root");
+			Romberg2D(parms,orient_integrand,orient_count*orient_dim,out,fname,conv_comp,conv_comp_N);
+			D("Romberg2D finished on root");
+			finish_avg=true;
+		/* first two are dummy variables; this call corresponds to one in orient_integrand by other processors;
+			* TODO: replace by a call without unnecessary overhead
+				*/
+			BcastOrient(&finish_avg,&finish_avg,&finish_avg);
+			if (IterMethod==IT_SHIFTED_CG) {
+				const char *directoryOld=directory;
+
+				for (int i=0;i<num_used_n;i++) {
+					char scg_dir[MAX_DIRNAME];
+					BuildScgDirectoryName(i,directoryOld,scg_dir,MAX_DIRNAME);
+					directory=scg_dir;
+					SaveMuellerAndCS(out+i*orient_dim);
+				}
+				directory=directoryOld;
+			}
+			else SaveMuellerAndCS(out);
+		}
+		else while (!finish_avg) orient_integrand(0,0,NULL);
+	}
 	else calculate_one_orientation(NULL);
 	// cleaning
 	FreeEverything();
